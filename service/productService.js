@@ -2,6 +2,7 @@
 const errorHandler = require("../util/errorHandler");
 const appError = require("../util/appError");
 const AppError = require("../util/appError");
+const db=require("../util/connection")
 
 //getAll
 
