@@ -1,0 +1,1 @@
+CREATE TABLE `transactions` (transaction_id INT AUTO_INCREMENT PRIMARY KEY,transaction_status VARCHAR(255),transaction_type VARCHAR(255),payment_id INT,order_id INT);

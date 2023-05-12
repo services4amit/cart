@@ -5,9 +5,5 @@ CREATE TABLE products (
   price DECIMAL(10, 2) NOT NULL,
   pack_size VARCHAR(50),
   category_id INT,
-  product_image VARCHAR(255),
-  total_stock INT,
-  b2b_stock INT,
-  b2c_stock INT,
-  FOREIGN KEY (category_id) REFERENCES categories(id)
+  product_image VARCHAR(255)
 );
