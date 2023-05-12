@@ -1,8 +1,7 @@
 // Retrieve product details by
 const errorHandler = require("../util/errorHandler");
-const appError = require("../util/appError");
 const AppError = require("../util/appError");
-const db=require("../util/connection")
+const db = require("../util/connection");
 
 //getAll
 
@@ -15,7 +14,7 @@ async function getProductDetailsById(req, res) {
     }
     const productId = req.params.id;
     const query = `SELECT * FROM products WHERE id = ${productId}`;
-    const product = await db.query(query);
+    const product = await db.query(`SELECT * FROM products`);
     res.json(product);
   } catch (err) {
     err.statusCode = err.statusCode || 500;
@@ -56,13 +55,13 @@ async function getProductsByCategory(req, res) {
   // Implement logic to retrieve products by category from a database or external API
   // Return the products
   try {
-    if (!req.body) {
+    if (!req.params.category_id) {
       throw new AppError("body must be present", 400);
     }
-    const category_id = req.body.category_id;
+    const categoryId = req.params.category_id;
     const query = `SELECT p.*
     FROM products AS p
-    INNER JOIN category AS c ON p.category = c.id
+    INNER JOIN categories AS c ON p.category_id = c.id
     WHERE c.id = ${categoryId}
   `;
     const product = await db.query(query);
@@ -86,17 +85,14 @@ async function addProduct(req, res) {
       throw new AppError("body must be present", 400);
     }
     const product = req.body;
-    const query = `INSERT INTO products (name, description, price, pack_size, category_id, product_image, total_stock, b2b_stock, b2c_stock)
+    const query = `INSERT INTO products (name, description, price, pack_size, category_id, product_image)
     VALUES (
       '${product.name}',
       '${product.description}',
       ${product.price},
       '${product.packSize}',
       ${product.category_id},
-      '${product.productImage}',
-      ${product.totalStock},
-      ${product.b2bStock},
-      ${product.b2cStock}
+      '${product.product_image}'
     )
   `;
     const response = await db.query(query);
@@ -120,15 +116,14 @@ async function updateProductById(req, res) {
       throw new AppError("product id must be present", 400);
     }
     const productId = req.params.id;
+    const updatedProduct = req.body;
     const query = `
     UPDATE products
     SET name = '${updatedProduct.name}',
         description = '${updatedProduct.description}',
         price = ${updatedProduct.price},
-        pack_size = '${updatedProduct.packSize}',
-        total_stock = ${updatedProduct.totalStock},
-        b2b_stock = ${updatedProduct.b2bStock},
-        b2c_stock = ${updatedProduct.b2cStock}
+        pack_size = '${updatedProduct.pack_size}',
+        product_image='${updatedProduct.product_image}'
     WHERE id = ${productId}
   `;
     const product = await db.query(query);
@@ -145,7 +140,7 @@ async function updateProductById(req, res) {
   }
 }
 
-// Update multiple products TODO: Add it as a transaction
+// Update multiple products TODO: Add it as a transaction //FIX ME: do this later
 async function updateBulkProducts(req, res) {
   try {
     if (!req.body) {
