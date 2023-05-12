@@ -6,6 +6,7 @@ var bodyParser = require("body-parser");
 var cartRouter = require("./routes/cart");
 var checkoutRouter = require("./routes/checkout");
 var productsRouter = require("./routes/product");
+var orderRouter = require("./routes/order");
 
 var app = express();
 app.use(bodyParser.json());
@@ -13,6 +14,7 @@ const mysql = require("mysql");
 app.use("/product", productsRouter);
 app.use("/cart", cartRouter);
 app.use("/checkout", checkoutRouter);
+app.use("/order", orderRouter);
 const port = 3100;
 
 app.listen(port, () => {
