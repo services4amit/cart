@@ -1,0 +1,207 @@
+{
+	"info": {
+		"_postman_id": "fb0f0cf8-1a4f-4396-abad-2883e13af039",
+		"name": "Cart-APIS",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "/cart/getByCustomerId",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3100/cart/getByCustomerId/40",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3100",
+					"path": [
+						"cart",
+						"getByCustomerId",
+						"40"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "POST: order",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"customer_id\": 40,\n    \"order_details\": [\n        {\n            \"product_id\": 2,\n            \"product_quantity\": 2\n        }\n    ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3100/order/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3100",
+					"path": [
+						"order",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "/productdetails/:id",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": null
+			},
+			"response": []
+		},
+		{
+			"name": "/getbysearch/:searchString",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3100/product/getbysearch/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3100",
+					"path": [
+						"product",
+						"getbysearch",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "/getproductbycategory",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3100/product/getproductbycategory",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3100",
+					"path": [
+						"product",
+						"getproductbycategory"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "/Addproduct",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"name\": \"potato\",\r\n  \"description\": \"This is a vegetable, a starchy one\",\r\n  \"price\": 2.99,\r\n  \"pack_size\": \"564\",\r\n  \"category_id\": 10,\r\n  \"product_image\": \"tmp//602fa7424e0dab141e679095bef12d76.jpg\"\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3100/product/Addproduct/51",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3100",
+					"path": [
+						"product",
+						"Addproduct",
+						"51"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "/updateproduct/:id",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"name\": \"potato\",\r\n  \"description\": \"This is a vegetable, a starchy one\",\r\n  \"price\": 2.99,\r\n  \"pack_size\": \"564\",\r\n  \"category_id\": 10,\r\n  \"product_image\": \"tmp//602fa7424e0dab141e679095bef12d76.jpg\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3100/product/updateproduct/51",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3100",
+					"path": [
+						"product",
+						"updateproduct",
+						"51"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "/updatebulkproduct",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"url": null
+			},
+			"response": []
+		},
+		{
+			"name": "POST:addtocart",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"customer_id\": 40,\n    \"order_details\": [\n        {\n            \"product_id\": 2,\n            \"product_quantity\": 2\n        }\n    ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3100/cart/addtocart",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3100",
+					"path": [
+						"cart",
+						"addtocart"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
