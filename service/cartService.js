@@ -12,7 +12,14 @@ const getCartByCustomerId = async (req, res, next) => {
     const response = await db.query(query);
     res.json(response);
   } catch (err) {
-    //console.log(err);
+    err.statusCode = err.statusCode || 500;
+    err.status = err.status || "ERROR";
+    res.status(err.statusCode).json({
+      status: err.status,
+      message: err.message,
+      stack: err.stack,
+    });
+    errorHandler(err, res);
   }
   return "id";
 };
@@ -65,8 +72,28 @@ const addToCart = async (req, res, next) => {
 //   return "id";
 // };
 
+const getCheckoutItem = async (req,res,next)=>{
+  try {
+    const {customer_id} = req.body 
+    const query= `select * from cart where customer_id=${customer_id} and active=1`
+    console.log(query);
+    const checkoutItems = await db.query(query);
+    res.json(checkoutItems);
+  } catch (err) {
+    err.statusCode = err.statusCode || 500;
+    err.status = err.status || "ERROR";
+    res.status(err.statusCode).json({
+      status: err.status,
+      message: err.message,
+      stack: err.stack,
+    });
+    errorHandler(err, res);
+  }
+}
+
 module.exports = {
   addToCart,
   // updateCartDetails,
   getCartByCustomerId,
+  getCheckoutItem
 };
