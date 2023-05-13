@@ -31,7 +31,7 @@ router.get("/productdetails/:id", getProductDetailsById);
 router.get("/getbysearch/:searchString", getProductsBySearchString);
 
 // GET route for /getproductbycategory
-router.get("/getproductbycategory", getProductsByCategory);
+router.get("/getproductbycategory/:category_id", getProductsByCategory);
 
 // POST route for /Addproduct
 router.post("/Addproduct", addProduct);

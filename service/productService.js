@@ -14,7 +14,7 @@ async function getProductDetailsById(req, res) {
     }
     const productId = req.params.id;
     const query = `SELECT * FROM products WHERE id = ${productId}`;
-    const product = await db.query(`SELECT * FROM products`);
+    const product = await db.query(query);
     res.json(product);
   } catch (err) {
     err.statusCode = err.statusCode || 500;
@@ -52,8 +52,6 @@ async function getProductsBySearchString(req, res) {
 
 // Retrieve products by category
 async function getProductsByCategory(req, res) {
-  // Implement logic to retrieve products by category from a database or external API
-  // Return the products
   try {
     if (!req.params.category_id) {
       throw new AppError("body must be present", 400);
