@@ -34,11 +34,12 @@ const order = async (req, res, next) => {
     customer_id,
     details)
     VALUES
-    (${customer_id},${order_details_string})
-      `;
+    (${customer_id},${order_details_string});
+   `;
     const order = await db.query(order_query);
-    console.log("order ", order);
+    console.log("order ", order.insertId);
 
+    let transaction_type = payment_type === "COD" ? "COD" : null;
     //create trans
     const trans_query = `INSERT INTO transactions
     (
@@ -47,10 +48,10 @@ const order = async (req, res, next) => {
       order_id
       )
     VALUES
-    ("STARTTED","COD",1)
+    ("INITIATED",${transaction_type},${order.insertId})
       `;
     const trans = await db.query(trans_query);
-    console.log("trans ", trans);
+    console.log("trans ", trans.insertId);
 
     //create order status
     const status_query = `INSERT INTO status
@@ -58,21 +59,21 @@ const order = async (req, res, next) => {
     status_type,
     orderId)
     VALUES
-    ("ORDERED",1)
+    ("INITIATED",${order.insertId})
       `;
     const status = await db.query(status_query);
-    console.log("status ", status);
+    console.log("status ", status.insertId);
 
     //update orders table
     const update_order_query = `UPDATE  orders
     SET 
-    status_id = 11,
-    transaction_id = 1
+    status_id = ${status.insertId},
+    transaction_id = ${trans.insertId}
   `;
 
     const update_order = await db.query(update_order_query);
     console.log("update_order ", update_order);
-    res.json({});
+    res.json({ order_id: order.insertId });
   } catch (err) {
     err.statusCode = err.statusCode || 500;
     err.status = err.status || "ERROR";
