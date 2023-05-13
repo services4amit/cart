@@ -90,6 +90,7 @@ async function addProduct(req, res) {
     if(result.length===0){
       throw new Error("category id is invalid");
     } 
+    //change the query to insert into product,stocks table-> this needs product id
     const query = `INSERT INTO products (name, description, price, pack_size, category_id, product_image)
     VALUES (
       '${product.name}',
