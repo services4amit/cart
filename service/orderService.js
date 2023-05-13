@@ -22,11 +22,17 @@ const order = async (req, res, next) => {
     // if (!req.params.id) {
     //   throw new AppError("id must be present", 400);
     // }
+    //req.body = {customer id-2, product id-3,4}}
 
     const { customer_id, order_details, payment_type } = req.body;
     const order_details_string = "'" + JSON.stringify(order_details) + "'";
     //check availability
+
     //update cart
+
+    //Case1 where everything is assumed available since the stock table isn't designed yet
+    const update_cart = `update cart  set active = false where customer_id =${customer_id} and JSON_CONTAINS(order_details, ${JSON.stringify(order_details)});;
+    `; //for now setting it to inactive to ttest
 
     //create order
     const order_query = `INSERT INTO orders
