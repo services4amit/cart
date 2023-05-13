@@ -12,7 +12,7 @@ router.post("/addtocart", function (req, res, next) {
 router.get("/getByCustomerId/:id",  getCartByCustomerId);
 
 /* PUT  update cart details */
-router.put("/updatecart",updateCartDetails);
+// router.put("/updatecart",updateCartDetails);
 
 
 /*GET checkout item */

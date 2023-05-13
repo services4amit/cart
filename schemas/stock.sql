@@ -17,7 +17,7 @@ CREATE TABLE stock (
 total stock: The total quantity of the product in stock, including both B2B and B2C stock.
 b2bstock: The quantity of the product available for sale to B2B customers.
 b2cstock: The quantity of the product available for sale to B2C customers.
-b2binward: The quantity of the product that is expected to arrive from a B2B supplier.
+b2binward: The quantity of the product that is expected to arrive from a B2B supplier. 
 b2cinward: The quantity of the product that is expected to arrive from a B2C supplier.
 b2bdump: The quantity of the product that is damaged or unsellable in B2B stock.
 b2cdump: The quantity of the product that is damaged or unsellable in B2C stock.

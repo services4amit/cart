@@ -83,6 +83,13 @@ async function addProduct(req, res) {
       throw new AppError("body must be present", 400);
     }
     const product = req.body;
+    const category_id = product.category_id;
+    // check if category_id exists in the table;
+    const categoryQuery = `select id from categories where id=${category_id}`;
+    const result =await db.query(categoryQuery);
+    if(result.length===0){
+      throw new Error("category id is invalid");
+    } 
     const query = `INSERT INTO products (name, description, price, pack_size, category_id, product_image)
     VALUES (
       '${product.name}',

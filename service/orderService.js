@@ -27,12 +27,13 @@ const order = async (req, res, next) => {
     const { customer_id, order_details, payment_type } = req.body;
     const order_details_string = "'" + JSON.stringify(order_details) + "'";
     //check availability
-
+      //constant for now 
     //update cart
 
     //Case1 where everything is assumed available since the stock table isn't designed yet
-    const update_cart = `update cart  set active = false where customer_id =${customer_id} and JSON_CONTAINS(order_details, ${JSON.stringify(order_details)});;
-    `; //for now setting it to inactive to ttest
+    const update_cart = `update cart set active=0 where customer_id =${customer_id} and active=1;`; //for now setting it to inactive to test
+    // CASE 2 when something is unavailable 
+
 
     //create order
     const order_query = `INSERT INTO orders
