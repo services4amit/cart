@@ -2,7 +2,8 @@
 const errorHandler = require("../util/errorHandler");
 const AppError = require("../util/appError");
 const db = require("../util/connection");
-
+const XLSX = require("xlsx");
+const uploads = require("multer");
 //getAll
 
 async function getProductDetailsById(req, res) {
@@ -85,22 +86,35 @@ async function addProduct(req, res) {
     const product = req.body;
     const category_id = product.category_id;
     // check if category_id exists in the table;
-    const categoryQuery = `select id from categories where id=${category_id}`;
-    const result =await db.query(categoryQuery);
-    if(result.length===0){
-      throw new Error("category id is invalid");
-    } 
+    // const categoryQuery = `select id from categories where id=${category_id}`;
+    // const result = await db.query(categoryQuery);
+    // if (result.length === 0) {
+    //   throw new Error("category id is invalid");
+    // }
     //change the query to insert into product,stocks table-> this needs product id
-    const query = `INSERT INTO products (name, description, price, pack_size, category_id, product_image)
-    VALUES (
-      '${product.name}',
-      '${product.description}',
-      ${product.price},
-      '${product.packSize}',
-      ${product.category_id},
-      '${product.product_image}'
-    )
-  `;
+    // db.beginTransaction((err) => {
+    //   if (err) {
+    //     throw new Error("couldn't begin transaction");
+    //   }
+    //   const query = `INSERT INTO products (name, description, price, pack_size, category_id, product_image)
+    //   SELECT '${product.name}',
+    //   '${product.description}',
+    //   ${product.price},
+    //   '${product.packSize}',
+    //   ${product.category_id},
+    //   '${product.product_image}'
+    //   FROM categories
+    //   WHERE id = ${product.category_id};`;
+
+    //   db.query(query, (err, res) => {
+    //     if (err) {
+    //       db.rollback();
+    //       throw new Error("Error inserting into products");
+    //     }
+    //   });
+
+    // });
+
     const response = await db.query(query);
     res.json(response);
   } catch (err) {
@@ -123,7 +137,7 @@ async function updateProductById(req, res) {
     }
     const productId = req.params.id;
     const updatedProduct = req.body;
-    const query = `
+    let query = `
     UPDATE products
     SET name = '${updatedProduct.name}',
         description = '${updatedProduct.description}',
@@ -133,6 +147,7 @@ async function updateProductById(req, res) {
     WHERE id = ${productId}
   `;
     const product = await db.query(query);
+    query = `update stock set totalstock=${updatedProduct.totalstock}, b2bstock=${updatedProduct.b2bstock}, b2cstock=${updatedProduct.b2bstock} where product_id = ${productId}`;
     res.json(product);
   } catch (err) {
     err.statusCode = err.statusCode || 500;
@@ -149,23 +164,13 @@ async function updateProductById(req, res) {
 // Update multiple products TODO: Add it as a transaction //FIX ME: do this later
 async function updateBulkProducts(req, res) {
   try {
-    if (!req.body) {
-      throw new AppError("body must be present", 400);
-    }
-    const products = req.body;
-    let query = "UPDATE products SET price = CASE id ";
-    products.forEach((product) => {
-      query += `WHEN ${product.id} THEN ${product.price}`;
-    });
-    // Add the END clause to complete the CASE statement
-    query += "END WHERE id IN (";
-
-    // Append the list of product IDs
-    const productIds = products.map((product) => product.id);
-    query += productIds.join(", ");
-    query += ")";
-    const result = await db.query(query);
-    res.json(result);
+    const file = req.file;
+    console.log(file);
+    // const workbook = XLSX.read(file.data);
+    // const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    // const products = XLSX.utils.sheet_to_json(sheet);
+    // console.log(products);
+    res.json(req);
   } catch (err) {
     err.statusCode = err.statusCode || 500;
     err.status = err.status || "ERROR";
