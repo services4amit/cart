@@ -172,7 +172,16 @@
 				"method": "PUT",
 				"header": [],
 				"url": {
-					"raw": ""
+					"raw": "http://localhost:3100/product/updatebulkproduct",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3100",
+					"path": [
+						"product",
+						"updatebulkproduct"
+					]
 				}
 			},
 			"response": []
@@ -262,6 +271,38 @@
 					"path": [
 						"cart",
 						"updatecart"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "New Request",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"productid\": \"[1,2,3,4,5]\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3100/order/stockavalabilitybyproduct",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3100",
+					"path": [
+						"order",
+						"stockavalabilitybyproduct"
 					]
 				}
 			},
