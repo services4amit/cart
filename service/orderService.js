@@ -27,13 +27,12 @@ const order = async (req, res, next) => {
     const { customer_id, order_details, payment_type } = req.body;
     const order_details_string = "'" + JSON.stringify(order_details) + "'";
     //check availability
-      //constant for now 
+    //constant for now
     //update cart
 
     //Case1 where everything is assumed available since the stock table isn't designed yet
     const update_cart = `update cart set active=0 where customer_id =${customer_id} and active=1;`; //for now setting it to inactive to test
-    // CASE 2 when something is unavailable 
-
+    // CASE 2 when something is unavailable
 
     //create order
     const order_query = `INSERT INTO orders
@@ -93,17 +92,27 @@ const order = async (req, res, next) => {
   }
 };
 
-// const updateCartDetails = async (cartDetails) => {
-//   //db call to update the row
-//   try {
-//     //await db.query()
-//   } catch (err) {
-//     //console.log(err);
-//   }
-//   return "id";
-// };
+const getStockAvailabailityByProduct = async (req, res, next) => {
+  //db call to update the row
+  try {
+    const { productid } = req.body;
+    const query = `select product_id from stock where product_id in (${productid.slice(
+      1,
+      productid.length - 1
+    )})`;
+    const resultset = await db.query(query);
+    let validProducts = [];
+    resultset.map((row) => {
+      validProducts.push(row.product_id);
+    });
+    res.json({ available_products: validProducts });
+  } catch (err) {
+    res.json(err);
+  }
+};
 
 module.exports = {
   order,
   getOrderByCustomerId,
+  getStockAvailabailityByProduct,
 };
