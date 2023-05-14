@@ -40,6 +40,6 @@ router.post("/Addproduct", addProduct);
 router.put("/updateproduct/:id", updateProductById);
 
 // PUT route for /updatebulkproduct
-router.put("/updatebulkproduct", updateBulkProducts);
+router.patch("/updatebulkproduct", updateBulkProducts);
 
 module.exports = router;
