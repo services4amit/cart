@@ -3,8 +3,31 @@ const errorHandler = require("../util/errorHandler");
 const AppError = require("../util/appError");
 const db = require("../util/connection");
 const XLSX = require("xlsx");
-const uploads = require("multer");
+
+
 //getAll
+async function getAll(req, res, next) {
+  let query = `SELECT category_id, GROUP_CONCAT(CONCAT('{name:"', name, '", price:"',price,'",category_id:"',category_id ,'",description:"',description,'",pack_size:"',pack_size, '",
+  product_image:"',product_image, '"}')) list FROM (select * from(select *,RANK() over (partition by category_id order by id desc)r from products)sq where sq.r<=2)res GROUP BY category_id;`;
+  const resultList = await db.query(query);
+  const result = [];
+  const regex = /,(?![^{]*\})/g;
+  resultList.map((row) => {
+    console.log(row);
+    let arr = [];
+    arr.push(eval("(" + row.list + ")"));
+    result.push({
+      category_id: row.category_id,
+      list: arr,
+    });
+  });
+  query = `select * from(select *,RANK() over (partition by category_id order by id desc)r from products)sq where sq.r>2;`;
+  const response = await db.query(query);
+  res.json({
+    latest: result,
+    restProducts: response,
+  });
+}
 
 async function getProductDetailsById(req, res) {
   // Implement logic to retrieve product details from a database or external API
@@ -147,8 +170,9 @@ async function updateProductById(req, res) {
         product_image='${updatedProduct.product_image}'
     WHERE id = ${productId}
   `;
-    const product = await db.query(query);
-    query = `update stock set totalstock=${updatedProduct.totalstock}, b2bstock=${updatedProduct.b2bstock}, b2cstock=${updatedProduct.b2bstock} where product_id = ${productId}`;
+    let product = await db.query(query);
+    query = `update stock set total_stock=${updatedProduct.total_stock}, b2b_stock=${updatedProduct.b2b_stock}, b2c_stock=${updatedProduct.b2b_stock} where product_id = ${productId}`;
+    product = await db.query(query);
     res.json(product);
   } catch (err) {
     err.statusCode = err.statusCode || 500;
@@ -165,13 +189,23 @@ async function updateProductById(req, res) {
 // Update multiple products TODO: Add it as a transaction //FIX ME: do this later
 async function updateBulkProducts(req, res) {
   try {
-    const file = req.file;
-    console.log(file);
-    // const workbook = XLSX.read(file.data);
-    // const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    // const products = XLSX.utils.sheet_to_json(sheet);
-    // console.log(products);
-    res.json(req);
+    if (req.file) {
+      const filePath = req.file.path;
+      const workbook = xlsx.readFile(filePath);
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+      let str = "";
+      jsonData.forEach((data) => {
+        str += `update \`products\` set \`price\`=${data[1]} where \`id\`=${data[0]};`;
+      });
+      console.log(str);
+      const response = await db.query(str);
+      console.log(response);
+      res.status(200).json({ message: "File uploaded successfully" });
+    } else {
+      // No file was uploaded
+      res.status(400).json({ message: "No file uploaded" });
+    }
   } catch (err) {
     err.statusCode = err.statusCode || 500;
     err.status = err.status || "ERROR";
@@ -185,6 +219,7 @@ async function updateBulkProducts(req, res) {
 }
 
 module.exports = {
+  getAll,
   getProductDetailsById,
   getProductsBySearchString,
   getProductsByCategory,
