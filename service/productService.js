@@ -139,19 +139,7 @@ async function addProduct(req, res) {
   }
 }
 
-    const response = await db.query(query);
-    res.json(response);
-  } catch (err) {
-    err.statusCode = err.statusCode || 500;
-    err.status = err.status || "ERROR";
-    res.status(err.statusCode).json({
-      status: err.status,
-      message: err.message,
-      stack: err.stack,
-    });
-    errorHandler(err, res);
-  }
-}
+
 
 // Update a product by id
 async function updateProductById(req, res) {

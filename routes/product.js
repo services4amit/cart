@@ -9,6 +9,7 @@
 */
 
 var express = require("express");
+const multer=require("multer")
 const {
   getProductDetailsById,
   getProductsByCategory,
