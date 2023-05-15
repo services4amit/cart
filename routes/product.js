@@ -16,8 +16,17 @@ const {
   addProduct,
   updateProductById,
   updateBulkProducts,
+  getAll,
 } = require("../service/productService");
 var router = express.Router();
+const storage = multer.diskStorage({
+  destination: "uploads/",
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + "-" + file.originalname);
+  },
+});
+
+const upload = multer({ storage: storage });
 
 /* GET users listing. */
 router.get("/getAll", function (req, res, next) {
@@ -40,6 +49,6 @@ router.post("/Addproduct", addProduct);
 router.put("/updateproduct/:id", updateProductById);
 
 // PUT route for /updatebulkproduct
-router.patch("/updatebulkproduct", updateBulkProducts);
+router.patch("/updatebulkproduct", upload.single("file"), updateBulkProducts);
 
 module.exports = router;
