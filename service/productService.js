@@ -85,35 +85,33 @@ async function addProduct(req, res) {
     }
     const product = req.body;
     const category_id = product.category_id;
-    // check if category_id exists in the table;
-    // const categoryQuery = `select id from categories where id=${category_id}`;
-    // const result = await db.query(categoryQuery);
-    // if (result.length === 0) {
-    //   throw new Error("category id is invalid");
-    // }
-    //change the query to insert into product,stocks table-> this needs product id
-    // db.beginTransaction((err) => {
-    //   if (err) {
-    //     throw new Error("couldn't begin transaction");
-    //   }
-    //   const query = `INSERT INTO products (name, description, price, pack_size, category_id, product_image)
-    //   SELECT '${product.name}',
-    //   '${product.description}',
-    //   ${product.price},
-    //   '${product.packSize}',
-    //   ${product.category_id},
-    //   '${product.product_image}'
-    //   FROM categories
-    //   WHERE id = ${product.category_id};`;
-
-    //   db.query(query, (err, res) => {
-    //     if (err) {
-    //       db.rollback();
-    //       throw new Error("Error inserting into products");
-    //     }
-    //   });
-
-    // });
+    console.log("add Product");
+    let query = `INSERT INTO products (name, description, price, pack_size, category_id, product_image)
+      SELECT '${product.name}',
+      '${product.description}',
+      ${product.price},
+      '${product.packSize}',
+      ${product.category_id},
+      '${product.product_image}'
+      FROM categories
+      WHERE id = ${product.category_id};`;
+    let response = await db.query(query);
+    query = `INSERT INTO stock (product_id, total_stock, b2b_stock, b2c_stock, b2b_inward, b2c_inward, b2b_dump, b2c_dump, b2b_remaining, b2c_remaining)
+    VALUES (${response.insertId}, ${product.total_stock}, ${product.b2b_stock}, ${product.b2c_stock}, 0, 0, 0, 0, 0, 0);
+    `;
+    response = await db.query(query);
+    res.json(response);
+  } catch (err) {
+    err.statusCode = err.statusCode || 500;
+    err.status = err.status || "ERROR";
+    res.status(err.statusCode).json({
+      status: err.status,
+      message: err.message,
+      stack: err.stack,
+    });
+    errorHandler(err, res);
+  }
+}
 
     const response = await db.query(query);
     res.json(response);
