@@ -96,6 +96,9 @@ async function addProduct(req, res) {
       FROM categories
       WHERE id = ${product.category_id};`;
     let response = await db.query(query);
+    if (response.insertId === 0) {
+      throw new Error("Invalid category id");
+      }
     query = `INSERT INTO stock (product_id, total_stock, b2b_stock, b2c_stock, b2b_inward, b2c_inward, b2b_dump, b2c_dump, b2b_remaining, b2c_remaining)
     VALUES (${response.insertId}, ${product.total_stock}, ${product.b2b_stock}, ${product.b2c_stock}, 0, 0, 0, 0, 0, 0);
     `;
