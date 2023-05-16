@@ -2,26 +2,41 @@
 const errorHandler = require("../util/errorHandler");
 const AppError = require("../util/appError");
 const db = require("../util/connection");
-const XLSX = require("xlsx");
-
+const xlsx = require("xlsx");
 
 //getAll
 async function getAll(req, res, next) {
-  let query = `SELECT category_id, GROUP_CONCAT(CONCAT('{name:"', name, '", price:"',price,'",category_id:"',category_id ,'",description:"',description,'",pack_size:"',pack_size, '",
-  product_image:"',product_image, '"}')) list FROM (select * from(select *,RANK() over (partition by category_id order by id desc)r from products)sq where sq.r<=2)res GROUP BY category_id;`;
+  // let query = `SELECT category_id, GROUP_CONCAT(CONCAT('{name:"', name, '", price:"',price,'",category_id:"',category_id ,'",description:"',description,'",size:"',size, '",
+  // product_image:"',product_image, '"}')) list FROM (select * from(select *,RANK() over (partition by category_id order by id desc)r from products)sq where sq.r<=2)res GROUP BY category_id;`;
+
+  let query = `SELECT category_id, GROUP_CONCAT(CONCAT('{name:"', name, '", price:"',price,'",category_id:"',category_id
+  ,'",category_name:"',category_name
+  ,'",size:"',size, '",
+  product_image:"',product_image, '"}')) list FROM 
+  (select s.id,s.name,s.price,s.description,s.product_image,s.size,cat.id as category_id,cat.name as category_name from(select * from(select *,RANK() over 
+  (partition by category_id order by id desc)r from products)sq where sq.r<=2)s join categories cat on s.category_id=cat.id)res 
+  GROUP BY category_id;`;
   const resultList = await db.query(query);
+  // console.log(resultList);
   const result = [];
   const regex = /,(?![^{]*\})/g;
   resultList.map((row) => {
-    console.log(row);
+    const objStrings = row.list.split(regex);
+    let obj1 = eval("(" + objStrings[0] + ")");
+    let obj2 = eval("(" + objStrings[1] + ")");
+
     let arr = [];
-    arr.push(eval("(" + row.list + ")"));
+    arr.push(obj1);
+    arr.push(obj2);
+
     result.push({
       category_id: row.category_id,
       list: arr,
     });
   });
-  query = `select * from(select *,RANK() over (partition by category_id order by id desc)r from products)sq where sq.r>2;`;
+  // query = `select * from(select *,RANK() over (partition by category_id order by id desc)r from products)sq where sq.r>2;`;
+  query = ` select s.id,s.name,s.price,s.product_image,s.size,cat.id as category_id,cat.name as category_name from(select * from(select *,RANK() over 
+  (partition by category_id order by id desc)r from products)sq where sq.r>2)s join categories cat on s.category_id=cat.id;`;
   const response = await db.query(query);
   res.json({
     latest: result,
@@ -37,8 +52,19 @@ async function getProductDetailsById(req, res) {
       throw new AppError("id must be present", 400);
     }
     const productId = req.params.id;
-    const query = `SELECT * FROM products WHERE id = ${productId}`;
-    const product = await db.query(query);
+    let query = `SELECT p.*, c.name AS category_name
+             FROM products p
+             JOIN categories c ON p.category_id = c.id
+             WHERE p.id = ${productId}`;
+
+    console.log(query);
+    let product = await db.query(query);
+    query = `SELECT c.id as pack_id,c.size,c.description  FROM products p join pack_sizes c on p.id=c.product_id WHERE p.id = ${productId}`;
+    let packs = await db.query(query);
+    console.log(packs);
+    if (product.length > 0) {
+      product[0]["pack_sizes"] = packs;
+    }
     res.json(product);
   } catch (err) {
     err.statusCode = err.statusCode || 500;
@@ -81,7 +107,7 @@ async function getProductsByCategory(req, res) {
       throw new AppError("body must be present", 400);
     }
     const categoryId = req.params.category_id;
-    const query = `SELECT p.*
+    const query = `SELECT p.*,c.name as category_name
     FROM products AS p
     INNER JOIN categories AS c ON p.category_id = c.id
     WHERE c.id = ${categoryId}
@@ -108,20 +134,26 @@ async function addProduct(req, res) {
     }
     const product = req.body;
     const category_id = product.category_id;
+    console.log(product.total_stock != product.b2b_stock + product.b2c_stock);
+    if (product.total_stock != product.b2b_stock + product.b2c_stock) {
+      throw new AppError("total_stock not proper");
+    }
     console.log("add Product");
-    let query = `INSERT INTO products (name, description, price, pack_size, category_id, product_image)
+    const description_string = JSON.stringify(product.description);
+    let query = `INSERT INTO products (name, description, price, size, category_id, product_image)
       SELECT '${product.name}',
-      '${product.description}',
+      '${description_string}',
       ${product.price},
-      '${product.packSize}',
+      '${product.size}',
       ${product.category_id},
       '${product.product_image}'
       FROM categories
       WHERE id = ${product.category_id};`;
+    console.log("add Product", query);
     let response = await db.query(query);
     if (response.insertId === 0) {
       throw new Error("Invalid category id");
-      }
+    }
     query = `INSERT INTO stock (product_id, total_stock, b2b_stock, b2c_stock, b2b_inward, b2c_inward, b2b_dump, b2c_dump, b2b_remaining, b2c_remaining)
     VALUES (${response.insertId}, ${product.total_stock}, ${product.b2b_stock}, ${product.b2c_stock}, 0, 0, 0, 0, 0, 0);
     `;
@@ -139,8 +171,6 @@ async function addProduct(req, res) {
   }
 }
 
-
-
 // Update a product by id
 async function updateProductById(req, res) {
   try {
@@ -152,15 +182,19 @@ async function updateProductById(req, res) {
     let query = `
     UPDATE products
     SET name = '${updatedProduct.name}',
-        description = '${updatedProduct.description}',
+        description = '${JSON.stringify(updatedProduct.description)}',
         price = ${updatedProduct.price},
-        pack_size = '${updatedProduct.pack_size}',
+        size = '${updatedProduct.size}',
         product_image='${updatedProduct.product_image}'
     WHERE id = ${productId}
   `;
+    console.log(query);
     let product = await db.query(query);
-    query = `update stock set total_stock=${updatedProduct.total_stock}, b2b_stock=${updatedProduct.b2b_stock}, b2c_stock=${updatedProduct.b2b_stock} where product_id = ${productId}`;
+    console.log("update");
+    query = `update stock set total_stock=${updatedProduct.total_stock}, b2b_stock=${updatedProduct.b2b_stock}, b2c_stock=${updatedProduct.b2c_stock} where product_id = ${productId}`;
+    console.log(query);
     product = await db.query(query);
+    console.log("stock");
     res.json(product);
   } catch (err) {
     err.statusCode = err.statusCode || 500;
@@ -177,6 +211,7 @@ async function updateProductById(req, res) {
 // Update multiple products TODO: Add it as a transaction //FIX ME: do this later
 async function updateBulkProducts(req, res) {
   try {
+    console.log("fdf");
     if (req.file) {
       const filePath = req.file.path;
       const workbook = xlsx.readFile(filePath);

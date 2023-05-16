@@ -9,7 +9,7 @@
 */
 
 var express = require("express");
-const multer=require("multer")
+const multer = require("multer");
 const {
   getProductDetailsById,
   getProductsByCategory,
@@ -30,9 +30,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 /* GET users listing. */
-router.get("/getAll", function (req, res, next) {
-  res.send("respond with a resource");
-});
+router.get("/getAll", getAll);
 
 // GET route for /productdetails/:id
 router.get("/productdetails/:id", getProductDetailsById);

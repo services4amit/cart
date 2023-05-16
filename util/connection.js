@@ -9,6 +9,7 @@ connection = mysql.createConnection({
   user: process.env.DB_USER_NM,
   password: process.env.DB_PASSWORD,
   database: process.env.DB,
+  multipleStatements: true,
 });
 // promise wrapper to enable async await with MYSQL
 connection.query = util.promisify(connection.query).bind(connection);
