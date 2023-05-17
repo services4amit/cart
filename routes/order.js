@@ -8,7 +8,8 @@ const {
 /* POST checkout */
 router.post("/", order);
 
-router.get("/order/:id", getOrderByCustomerId);
+router.get("/past/:id", getOrderByCustomerId);
+router.get("/active/:id", getOrderByCustomerId);
 
 router.get("/stockavalabilitybyproduct", getStockAvailabailityByProduct);
 
