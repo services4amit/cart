@@ -10,11 +10,11 @@ const getOrderByCustomerId = async (req, res, next) => {
     const customer_id = req.params.id;
     let query = "";
     if (path == "past") {
-      query = `select * from orders
-      where customer_id=${customer_id} and status_id in (select status_id from status where status_type='DELIVERED');`;
+      query = `select o.*,s.status_type from orders o join status s on o.order_id=s.orderId
+      where customer_id=${customer_id} and o.status_id in (select status_id from status where status_type='DELIVERED');`;
     } else {
-      query = `select * from orders
-      where customer_id=${customer_id} and status_id in (select status_id from status where status_type!='DELIVERED');`;
+      query = `select o.*,s.status_type from orders o join status s on o.order_id=s.orderId
+      where customer_id=${customer_id} and o.status_id in (select status_id from status where status_type!='DELIVERED');`;
     }
 
     const response = await db.query(query);
