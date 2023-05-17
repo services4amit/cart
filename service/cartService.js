@@ -30,6 +30,9 @@ const addToCart = async (req, res, next) => {
     //   throw new AppError("id must be present", 400);
     // }
 
+    if (!req.body.customer_id || !req.body.order_details) {
+      throw new AppError("customer_id and order_details must be present", 400);
+    }
     const { customer_id, order_details } = req.body;
     //update other rows to active false
 
@@ -64,7 +67,7 @@ const addToCart = async (req, res, next) => {
 
 //FIXME: use later
 // const updateCartDetails = async (req,res,next) => {
-  
+
 //   try {
 //     const {customer_id, order_details} = req.body;
 //     const query = `update cart set order_details='${JSON.stringify(order_details)}' where customer_id = ${customer_id} and active =1`
@@ -84,10 +87,11 @@ const addToCart = async (req, res, next) => {
 //   return "id";
 // };
 
-const getCheckoutItem = async (req,res,next)=>{
+const getCheckoutItem = async (req, res, next) => {
   try {
-    const {customer_id} = req.body 
-    const query= `select * from cart where customer_id=${customer_id} and active=1`
+    console.log("df");
+    const customer_id = req.params.id;
+    const query = `select * from cart where customer_id=${customer_id} and active=1`;
     console.log(query);
     const checkoutItems = await db.query(query);
     res.json(checkoutItems);
@@ -101,11 +105,11 @@ const getCheckoutItem = async (req,res,next)=>{
     });
     errorHandler(err, res);
   }
-}
+};
 
 module.exports = {
   addToCart,
   // updateCartDetails,
   getCartByCustomerId,
-  getCheckoutItem
+  getCheckoutItem,
 };
