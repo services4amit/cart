@@ -8,9 +8,6 @@ const getOrderByCustomerId = async (req, res, next) => {
     console.log(req.path.split("/").filter((part) => part !== ""));
     let path = req.path.split("/").filter((part) => part !== "")[0];
     const customer_id = req.params.id;
-    if (!customerId) {
-      throw new Error("Customer ID must be provided");
-    }
     let query = "";
     if (path == "past") {
       query = `select * from orders
@@ -35,16 +32,7 @@ const order = async (req, res, next) => {
     //   throw new AppError("id must be present", 400);
     // }
     //req.body = {customer id-2, product id-3,4}}
-    if (
-      !req.body.customer_id ||
-      !req.body.order_details ||
-      !req.body.payment_type
-    ) {
-      throw new AppError(
-        "customer_id, order_details, and payment_type must be present",
-        400
-      );
-    }
+
     const { customer_id, order_details, payment_type } = req.body;
     const order_details_string = "'" + JSON.stringify(order_details) + "'";
     let total_price = order_details.reduce((sum, cur) => {
@@ -97,7 +85,7 @@ const order = async (req, res, next) => {
     const update_order_query = `UPDATE  orders
     SET 
     status_id = ${status.insertId},
-    transaction_id = ${trans.insertId}
+    transaction_id = ${trans.insertId} where order_id=${order.insertId}
   `;
 
     const update_order = await db.query(update_order_query);
@@ -118,9 +106,6 @@ const order = async (req, res, next) => {
 const getStockAvailabailityByProduct = async (req, res, next) => {
   //db call to update the row
   try {
-    if (!req.body.order_details || !Array.isArray(req.body.order_details)) {
-      throw new AppError("order_details must be an array", 400);
-    }
     const { order_details } = req.body;
     console.log("dd", order_details);
     // let order_product_ids=[];
