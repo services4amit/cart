@@ -6,9 +6,6 @@ const xlsx = require("xlsx");
 
 //getAll
 async function getAll(req, res, next) {
-  // let query = `SELECT category_id, GROUP_CONCAT(CONCAT('{name:"', name, '", price:"',price,'",category_id:"',category_id ,'",description:"',description,'",size:"',size, '",
-  // product_image:"',product_image, '"}')) list FROM (select * from(select *,RANK() over (partition by category_id order by id desc)r from products)sq where sq.r<=2)res GROUP BY category_id;`;
-
   let query = `SELECT category_id, GROUP_CONCAT(CONCAT('{name:"', name, '", price:"',price,'",category_id:"',category_id
   ,'",category_name:"',category_name
   ,'",size:"',size, '",
@@ -34,7 +31,6 @@ async function getAll(req, res, next) {
       list: arr,
     });
   });
-  // query = `select * from(select *,RANK() over (partition by category_id order by id desc)r from products)sq where sq.r>2;`;
   query = ` select s.id,s.name,s.price,s.product_image,s.size,cat.id as category_id,cat.name as category_name from(select * from(select *,RANK() over 
   (partition by category_id order by id desc)r from products)sq where sq.r>2)s join categories cat on s.category_id=cat.id;`;
   const response = await db.query(query);
@@ -45,7 +41,6 @@ async function getAll(req, res, next) {
 }
 
 async function getProductDetailsById(req, res) {
-  // Implement logic to retrieve product details from a database or external API
   console.log("getProductDetailsById");
   try {
     if (!req.params.id) {
@@ -133,10 +128,39 @@ async function addProduct(req, res) {
       throw new AppError("body must be present", 400);
     }
     const product = req.body;
-    const category_id = product.category_id;
-    console.log(product.total_stock != product.b2b_stock + product.b2c_stock);
+    if (
+      !product.name ||
+      !product.category_id ||
+      !product.product_image ||
+      !product.total_stock ||
+      !product.b2b_stock ||
+      !product.b2c_stock
+    ) {
+      throw new AppError("Missing required fields", 400);
+    }
+
+    if (isNaN(product.price) || product.price <= 0) {
+      throw new AppError("Invalid price value", 400);
+    }
+
+    if (
+      isNaN(product.total_stock) ||
+      isNaN(product.b2b_stock) ||
+      isNaN(product.b2c_stock)
+    ) {
+      throw new AppError("Stock values must be numbers", 400);
+    }
+
     if (product.total_stock != product.b2b_stock + product.b2c_stock) {
-      throw new AppError("total_stock not proper");
+      throw new AppError("Total stock is not proper");
+    }
+    const category_id = product.category_id;
+    const calculatedTotalStock = product.b2b_stock + product.b2c_stock;
+
+    if (product.total_stock !== calculatedTotalStock) {
+      throw new AppError(
+        "Total stock is not equal to the sum of b2b and b2c stock"
+      );
     }
     console.log("add Product");
     const description_string = JSON.stringify(product.description);
@@ -179,6 +203,30 @@ async function updateProductById(req, res) {
     }
     const productId = req.params.id;
     const updatedProduct = req.body;
+    if (
+      !updatedProduct.name ||
+      !updatedProduct.description ||
+      !updatedProduct.price ||
+      !updatedProduct.size ||
+      !updatedProduct.product_image ||
+      !updatedProduct.total_stock ||
+      !updatedProduct.b2b_stock ||
+      !updatedProduct.b2c_stock
+    ) {
+      throw new AppError("Missing required fields", 400);
+    }
+
+    if (isNaN(updatedProduct.price) || updatedProduct.price <= 0) {
+      throw new AppError("Invalid price value", 400);
+    }
+
+    if (
+      isNaN(updatedProduct.total_stock) ||
+      isNaN(updatedProduct.b2b_stock) ||
+      isNaN(updatedProduct.b2c_stock)
+    ) {
+      throw new AppError("Stock values must be numbers", 400);
+    }
     let query = `
     UPDATE products
     SET name = '${updatedProduct.name}',
@@ -219,6 +267,15 @@ async function updateBulkProducts(req, res) {
       const jsonData = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
       let str = "";
       jsonData.forEach((data) => {
+        if (!data[0] || !data[1]) {
+          throw new AppError("Invalid data in the file", 400);
+        }
+        const productId = parseInt(data[0]);
+        const price = parseFloat(data[1]);
+
+        if (isNaN(productId) || isNaN(price) || price <= 0) {
+          throw new AppError("Invalid data format in the file", 400);
+        }
         str += `update \`products\` set \`price\`=${data[1]} where \`id\`=${data[0]};`;
       });
       console.log(str);
@@ -250,3 +307,4 @@ module.exports = {
   updateProductById,
   updateBulkProducts,
 };
+
