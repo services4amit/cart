@@ -1,21 +1,20 @@
 var express = require("express");
-const { getCartByCustomerId, getCheckoutItem, updateCartDetails } = require("../service/cartService");
+const {
+  getCartByCustomerId,
+  getCheckoutItem,
+  updateCartDetails,
+  addToCart,
+} = require("../service/cartService");
 var router = express.Router();
 
 /* POST addToCart. */
-router.post("/addtocart", function (req, res, next) {
-  res.render("index", { title: "Express" });
-  //call addToCart(cartDetails);
-});
+router.post("/addtocart", addToCart);
 
 /* GET  cart details by customer Id. */
-router.get("/getByCustomerId/:id",  getCartByCustomerId);
+router.get("/getByCustomerId/:id", getCartByCustomerId);
 
 /* PUT  update cart details */
 // router.put("/updatecart",updateCartDetails);
 
-
 /*GET checkout item */
-router.get("/getcheckoutitem", getCheckoutItem);
-
-module.exports = router;
+router.get("/getcheckoutitem/:id", getCheckoutItem);
