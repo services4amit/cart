@@ -80,7 +80,13 @@ async function getProductsBySearchString(req, res) {
       throw new AppError("searchString must be present", 400);
     }
     const searchString = req.params.searchString;
-    const query = `SELECT * FROM products WHERE name LIKE '%${searchString}%' OR description LIKE '%${searchString}%'`;
+    // const query = `SELECT * FROM products leftjoin categories on products.category_id = categories.id WHERE name LIKE '%${searchString}%' OR category LIKE '%${searchString}%'`;
+    const query = `SELECT *
+    FROM products
+    LEFT JOIN categories ON products.category_id = categories.id
+    WHERE products.name LIKE '%${searchString}%'
+       OR categories.name LIKE '%${searchString}%';
+    `;
     const product = await db.query(query);
     res.json(product);
   } catch (err) {
@@ -307,4 +313,3 @@ module.exports = {
   updateProductById,
   updateBulkProducts,
 };
-
