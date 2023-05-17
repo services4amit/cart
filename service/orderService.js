@@ -26,21 +26,21 @@ const order = async (req, res, next) => {
 
     const { customer_id, order_details, payment_type } = req.body;
     const order_details_string = "'" + JSON.stringify(order_details) + "'";
-    //check availability
-    //constant for now
-    //update cart
+    let total_price = order_details.reduce((sum, cur) => {
+      sum += cur.price;
+      return sum;
+    }, 0);
 
-    //Case1 where everything is assumed available since the stock table isn't designed yet
-    const update_cart = `update cart set active=0 where customer_id =${customer_id} and active=1;`; //for now setting it to inactive to test
-    // CASE 2 when something is unavailable
-
+    // //update cart
+    // const update_cart = `update cart set active=0 where customer_id =${customer_id} and active=1;`; //for now setting it to inactive to test
+    // const update_cart_resp = await db.query(update_cart);
     //create order
     const order_query = `INSERT INTO orders
     (
     customer_id,
-    details)
+    details,total_price)
     VALUES
-    (${customer_id},${order_details_string});
+    (${customer_id},${order_details_string},${total_price});
    `;
     const order = await db.query(order_query);
     console.log("order ", order.insertId);
@@ -54,8 +54,10 @@ const order = async (req, res, next) => {
       order_id
       )
     VALUES
-    ("INITIATED",${transaction_type},${order.insertId})
+    ("INITIATED",
+    '${transaction_type}',${order.insertId})
       `;
+    console.log(trans_query);
     const trans = await db.query(trans_query);
     console.log("trans ", trans.insertId);
 
@@ -95,17 +97,33 @@ const order = async (req, res, next) => {
 const getStockAvailabailityByProduct = async (req, res, next) => {
   //db call to update the row
   try {
-    const { productid } = req.body;
-    const query = `select product_id from stock where product_id in (${productid.slice(
-      1,
-      productid.length - 1
-    )})`;
-    const resultset = await db.query(query);
+    const { order_details } = req.body;
+    console.log("dd", order_details);
+    // let order_product_ids=[];
+    let avail_query = ` select product_id from stock where `;
+    order_details.forEach((element, index) => {
+      let str = "";
+      if (index == 0) {
+        str = `(product_id = ${element.product_id} and b2b_stock>=${element.product_quantity}*${element.pack_details.size} )`;
+      } else {
+        str = ` OR (product_id = ${element.product_id} and b2b_stock>=${element.product_quantity}*${element.pack_details.size} )`;
+      }
+      avail_query += str;
+    });
+    console.log(avail_query);
+
+    // let query = `select product_id from stock where (product_id =2 and b2b_stock>=20) OR (product_id =56 and b2b_stock>=10)`;
+    // // const query = `select product_id from stock where product_id in (${productid.slice(
+    // //   1,
+    // //   productid.length - 1
+    // // )})`;
+    const resultset = await db.query(avail_query);
+    console.log(resultset);
     let validProducts = [];
     resultset.map((row) => {
       validProducts.push(row.product_id);
     });
-    res.json({ available_products: validProducts });
+    res.json({ available_product_ids: validProducts });
   } catch (err) {
     res.json(err);
   }
