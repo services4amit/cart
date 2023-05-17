@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "9c89b8ce-f265-40a8-82d5-b487d72663ca",
+		"_postman_id": "23ee74b5-1083-4d9f-8ac1-9f6c24fbe475",
 		"name": "Cart-APIS",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -33,7 +33,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"customer_id\": 40,\n    \"order_details\": [\n        {\n            \"product_id\": 2,\n            \"product_quantity\": 2\n        }\n    ]\n}",
+					"raw": "{\n    \"customer_id\": 40,\n    \"payment_type\":\"COD\",\n    \"order_details\": [\n        {\n            \"product_id\": 2,\n            \"product_quantity\": 2,\n            \"pack_details\": {\n                \"pack_id\": 1,\n                \"size\": 10,\n                \"description\": \"Pack of 10 small items\"\n            },\n            \"price\": 440\n        }\n    ]\n}\n",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -61,7 +61,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:3100/product/productdetails/123",
+					"raw": "http://localhost:3100/product/productdetails/1",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -70,7 +70,7 @@
 					"path": [
 						"product",
 						"productdetails",
-						"123"
+						"1"
 					]
 				}
 			},
@@ -82,7 +82,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:3100/product/getbysearch/",
+					"raw": "http://localhost:3100/product/getbysearch/a",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -91,7 +91,7 @@
 					"path": [
 						"product",
 						"getbysearch",
-						""
+						"a"
 					]
 				}
 			},
@@ -103,7 +103,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:3100/product/getproductbycategory",
+					"raw": "http://localhost:3100/product/getproductbycategory/1",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -111,7 +111,8 @@
 					"port": "3100",
 					"path": [
 						"product",
-						"getproductbycategory"
+						"getproductbycategory",
+						"1"
 					]
 				}
 			},
@@ -124,7 +125,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"name\": \"test\",\r\n  \"description\": \"This is a fruit\",\r\n  \"price\": 7.99,\r\n  \"pack_size\": \"5\",\r\n  \"category_id\": 122,\r\n  \"product_image\": \"tmp//612fa7424e0dab141e679095bef12d76.jpg\",\r\n  \"total_stock\": 50,\r\n  \"b2b_stock\":21,\r\n  \"b2c_stock\":29\r\n}\r\n",
+					"raw": "{\r\n    \"name\": \"test171\",\r\n    \"description\": {\r\n        \"color\": \"red\",\r\n        \"taste\": \"sweet\",\r\n        \"origin\": \"United States\",\r\n        \"origin2\": \"United States2\"\r\n    },\r\n    \"price\": 7.99,\r\n    \"category_id\": 1,\r\n    \"product_image\": \"tmp//612fa7424e0dab141e679095bef12d76.jpg\",\r\n    \"total_stock\": 50,\r\n    \"b2b_stock\": 21,\r\n    \"b2c_stock\": 29\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -153,7 +154,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"name\": \"potato\",\r\n  \"description\": \"This is a vegetable, a starchy one mainly from scotland\",\r\n  \"price\": 2.99,\r\n  \"pack_size\": \"564\",\r\n  \"category_id\": 10,\r\n  \"product_image\": \"tmp//602fa7424e0dab141e679095bef12d76.jpg\"\r\n}",
+					"raw": "{\r\n    \"name\": \"potato\",\r\n    \"description\": {\r\n        \"color\": \"red\",\r\n        \"taste\": \"sweet\",\r\n        \"origin\": \"United States\"\r\n    },\r\n    \"price\": 111,\r\n    \"category_id\": 10,\r\n    \"product_image\": \"tmp//602fa7424e0dab141e679095bef12d76.jpg\",\r\n    \"total_stock\":1000,\r\n    \"b2b_stock\":500,\r\n    \"b2c_stock\":500\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -161,7 +162,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:3100/product/updateproduct/11",
+					"raw": "http://localhost:3100/product/updateproduct/51",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -170,7 +171,7 @@
 					"path": [
 						"product",
 						"updateproduct",
-						"11"
+						"51"
 					]
 				}
 			},
@@ -179,8 +180,18 @@
 		{
 			"name": "/updatebulkproduct",
 			"request": {
-				"method": "PUT",
+				"method": "PATCH",
 				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/C:/Users/sangi/OneDrive/Desktop/Book1.xlsx"
+						}
+					]
+				},
 				"url": {
 					"raw": "http://localhost:3100/product/updatebulkproduct",
 					"protocol": "http",
@@ -203,7 +214,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"customer_id\": 40,\n    \"order_details\": [\n        {\n            \"product_id\": 2,\n            \"product_quantity\": 2\n        }\n    ]\n}",
+					"raw": "{\n    \"customer_id\": 40,\n    \"order_details\": [\n        {\n            \"product_id\": 2,\n            \"product_quantity\": 2,\n            \"pack_details\": {\n                \"pack_id\": 1,\n                \"size\": 10,\n                \"description\": \"Pack of 10 small items\"\n            },\n            \"price\": 440\n        }\n    ]\n}\n",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -235,7 +246,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"customer_id\":\"1\"\r\n}",
+					"raw": "",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -243,7 +254,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:3100/cart/getCheckoutItem",
+					"raw": "http://localhost:3100/cart/getcheckoutitem/40",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -251,79 +262,10 @@
 					"port": "3100",
 					"path": [
 						"cart",
-						"getCheckoutItem"
+						"getcheckoutitem",
+						"40"
 					]
 				}
-			},
-			"response": []
-		},
-		{
-			"name": "updateCart",
-			"request": {
-				"method": "PUT",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"customer_id\": 1,\r\n    \"order_details\": {\r\n        \"products\": [\r\n            {\r\n                \"id\": 1,\r\n                \"quantity\": 10\r\n            },\r\n            {\r\n                \"id\": 2,\r\n                \"quantity\": 1\r\n            }\r\n        ],\r\n        \"subtotal\": 2799.97\r\n    }\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "http://localhost:3100/cart/updatecart",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "3100",
-					"path": [
-						"cart",
-						"updatecart"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "getByProduct",
-			"protocolProfileBehavior": {
-				"disableBodyPruning": true
-			},
-			"request": {
-				"method": "GET",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"productid\": \"[1,2,3,4,5]\"\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "http://localhost:3100/order/stockavalabilitybyproduct",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "3100",
-					"path": [
-						"order",
-						"stockavalabilitybyproduct"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "updateBulkProduct",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": null
 			},
 			"response": []
 		},
@@ -348,12 +290,12 @@
 			"response": []
 		},
 		{
-			"name": "getOrderById",
+			"name": "get-order/active",
 			"request": {
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:3100/order/order/12",
+					"raw": "http://localhost:3100/order/active/40",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -361,8 +303,29 @@
 					"port": "3100",
 					"path": [
 						"order",
+						"active",
+						"40"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get-order/past",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3100/order/past/40",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3100",
+					"path": [
 						"order",
-						"12"
+						"past",
+						"40"
 					]
 				}
 			},
@@ -371,8 +334,17 @@
 		{
 			"name": "stockAvailabilityProduct",
 			"request": {
-				"method": "GET",
+				"method": "POST",
 				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"customer_id\": 40,\r\n    \"order_details\": [\r\n        {\r\n            \"product_id\": 53,\r\n            \"product_quantity\": 2,\r\n            \"pack_details\": {\r\n                \"pack_id\": 1,\r\n                \"size\": 10,\r\n                \"description\": \"Pack of 10 small items\"\r\n            },\r\n            \"price\": 440\r\n        },\r\n         {\r\n            \"product_id\": 5,\r\n            \"product_quantity\": 2,\r\n            \"pack_details\": {\r\n                \"pack_id\": 1,\r\n                \"size\": 10,\r\n                \"description\": \"Pack of 10 small items\"\r\n            },\r\n            \"price\": 440\r\n        }\r\n    ]\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
 				"url": {
 					"raw": "http://localhost:3100/order/stockavalabilitybyproduct",
 					"protocol": "http",
@@ -394,7 +366,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:3100/cart/getcheckoutitem",
+					"raw": "http://localhost:3100/cart/getcheckoutitem/40",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -402,7 +374,8 @@
 					"port": "3100",
 					"path": [
 						"cart",
-						"getcheckoutitem"
+						"getcheckoutitem",
+						"40"
 					]
 				}
 			},
@@ -410,5 +383,3 @@
 		}
 	]
 }
-
-

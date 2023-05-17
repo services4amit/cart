@@ -6,11 +6,8 @@ const xlsx = require("xlsx");
 
 //getAll
 async function getAll(req, res, next) {
-  let query = `SELECT category_id, GROUP_CONCAT(CONCAT('{name:"', name, '", price:"',price,'",category_id:"',category_id
-  ,'",category_name:"',category_name
-  ,'",size:"',size, '",
-  product_image:"',product_image, '"}')) list FROM 
-  (select s.id,s.name,s.price,s.description,s.product_image,s.size,cat.id as category_id,cat.name as category_name from(select * from(select *,RANK() over 
+  let query = `SELECT category_id, GROUP_CONCAT(CONCAT('{name:"', name, '", price:"',price,'",category_id:"',category_id,'",category_name:"',category_name,'",product_image:"',product_image, '"}')) list FROM 
+  (select s.id,s.name,s.price,s.description,s.product_image,cat.id as category_id,cat.name as category_name from(select * from(select *,RANK() over 
   (partition by category_id order by id desc)r from products)sq where sq.r<=2)s join categories cat on s.category_id=cat.id)res 
   GROUP BY category_id;`;
   const resultList = await db.query(query);
@@ -31,7 +28,7 @@ async function getAll(req, res, next) {
       list: arr,
     });
   });
-  query = ` select s.id,s.name,s.price,s.product_image,s.size,cat.id as category_id,cat.name as category_name from(select * from(select *,RANK() over 
+  query = ` select s.id,s.name,s.price,s.product_image,cat.id as category_id,cat.name as category_name from(select * from(select *,RANK() over 
   (partition by category_id order by id desc)r from products)sq where sq.r>2)s join categories cat on s.category_id=cat.id;`;
   const response = await db.query(query);
   res.json({
@@ -80,13 +77,7 @@ async function getProductsBySearchString(req, res) {
       throw new AppError("searchString must be present", 400);
     }
     const searchString = req.params.searchString;
-    // const query = `SELECT * FROM products leftjoin categories on products.category_id = categories.id WHERE name LIKE '%${searchString}%' OR category LIKE '%${searchString}%'`;
-    const query = `SELECT *
-    FROM products
-    LEFT JOIN categories ON products.category_id = categories.id
-    WHERE products.name LIKE '%${searchString}%'
-       OR categories.name LIKE '%${searchString}%';
-    `;
+    const query = `SELECT * FROM products WHERE name LIKE '%${searchString}%' OR description LIKE '%${searchString}%'`;
     const product = await db.query(query);
     res.json(product);
   } catch (err) {
@@ -170,11 +161,10 @@ async function addProduct(req, res) {
     }
     console.log("add Product");
     const description_string = JSON.stringify(product.description);
-    let query = `INSERT INTO products (name, description, price, size, category_id, product_image)
+    let query = `INSERT INTO products (name, description, price, category_id, product_image)
       SELECT '${product.name}',
       '${description_string}',
       ${product.price},
-      '${product.size}',
       ${product.category_id},
       '${product.product_image}'
       FROM categories
@@ -213,7 +203,6 @@ async function updateProductById(req, res) {
       !updatedProduct.name ||
       !updatedProduct.description ||
       !updatedProduct.price ||
-      !updatedProduct.size ||
       !updatedProduct.product_image ||
       !updatedProduct.total_stock ||
       !updatedProduct.b2b_stock ||
@@ -238,7 +227,6 @@ async function updateProductById(req, res) {
     SET name = '${updatedProduct.name}',
         description = '${JSON.stringify(updatedProduct.description)}',
         price = ${updatedProduct.price},
-        size = '${updatedProduct.size}',
         product_image='${updatedProduct.product_image}'
     WHERE id = ${productId}
   `;
@@ -313,3 +301,4 @@ module.exports = {
   updateProductById,
   updateBulkProducts,
 };
+
