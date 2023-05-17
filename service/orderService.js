@@ -5,9 +5,18 @@ const errorHandler = require("../util/errorHandler");
 const getOrderByCustomerId = async (req, res, next) => {
   //db call to fetch the row by customerId;
   try {
+    console.log(req.path.split("/").filter((part) => part !== ""));
+    let path = req.path.split("/").filter((part) => part !== "")[0];
     const customer_id = req.params.id;
-    const query = `select * from orders
-   where customer_id=${customer_id}`;
+    let query = "";
+    if (path == "past") {
+      query = `select * from orders
+      where customer_id=${customer_id} and status_id in (select status_id from status where status_type='DELIVERED');`;
+    } else {
+      query = `select * from orders
+      where customer_id=${customer_id} and status_id in (select status_id from status where status_type!='DELIVERED');`;
+    }
+
     const response = await db.query(query);
     res.json(response);
   } catch (err) {
