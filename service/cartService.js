@@ -6,6 +6,9 @@ const getCartByCustomerId = async (req, res, next) => {
   //db call to fetch the row by customerId;
   try {
     const customer_id = req.params.id;
+    if (!customer_id) {
+      throw new AppError("Missing customer ID", 400);
+    }
     const query = `select * from cart
    where customer_id=${customer_id}`;
     console.log(query);
@@ -91,6 +94,9 @@ const getCheckoutItem = async (req, res, next) => {
   try {
     console.log("df");
     const customer_id = req.params.id;
+    if (!customer_id) {
+      throw new AppError("Missing customer ID", 400);
+    }
     const query = `select * from cart where customer_id=${customer_id} and active=1`;
     console.log(query);
     const checkoutItems = await db.query(query);

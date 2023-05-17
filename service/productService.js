@@ -125,15 +125,22 @@ async function addProduct(req, res) {
       throw new AppError("body must be present", 400);
     }
     const product = req.body;
-    if (
-      !product.name ||
-      !product.category_id ||
-      !product.product_image ||
-      !product.total_stock ||
-      !product.b2b_stock ||
-      !product.b2c_stock
-    ) {
-      throw new AppError("Missing required fields", 400);
+    const expectedFields = [
+      "name",
+      "category_id",
+      "product_image",
+      "total_stock",
+      "b2b_stock",
+      "b2c_stock",
+    ];
+
+    const missingFields = expectedFields.filter((field) => !product[field]);
+
+    if (missingFields.length > 0) {
+      const errorMessage = `Missing required fields: ${missingFields.join(
+        ", "
+      )}`;
+      throw new AppError(errorMessage, 400);
     }
 
     if (isNaN(product.price) || product.price <= 0) {
@@ -199,16 +206,25 @@ async function updateProductById(req, res) {
     }
     const productId = req.params.id;
     const updatedProduct = req.body;
-    if (
-      !updatedProduct.name ||
-      !updatedProduct.description ||
-      !updatedProduct.price ||
-      !updatedProduct.product_image ||
-      !updatedProduct.total_stock ||
-      !updatedProduct.b2b_stock ||
-      !updatedProduct.b2c_stock
-    ) {
-      throw new AppError("Missing required fields", 400);
+    const expectedFields = [
+      "name",
+      "description",
+      "price",
+      "product_image",
+      "total_stock",
+      "b2b_stock",
+      "b2c_stock",
+    ];
+
+    const missingFields = expectedFields.filter(
+      (field) => !updatedProduct[field]
+    );
+
+    if (missingFields.length > 0) {
+      const errorMessage = `Missing required fields: ${missingFields.join(
+        ", "
+      )}`;
+      throw new AppError(errorMessage, 400);
     }
 
     if (isNaN(updatedProduct.price) || updatedProduct.price <= 0) {
@@ -301,4 +317,3 @@ module.exports = {
   updateProductById,
   updateBulkProducts,
 };
-
