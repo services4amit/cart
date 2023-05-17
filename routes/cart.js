@@ -18,3 +18,4 @@ router.get("/getByCustomerId/:id", getCartByCustomerId);
 
 /*GET checkout item */
 router.get("/getcheckoutitem/:id", getCheckoutItem);
+module.exports = router;
