@@ -373,10 +373,10 @@ async function updateBulkProducts(req, res) {
       console.log(jsonData);
       let str = "";
       jsonData.forEach((data) => {
-        if (!data.id || !data.mrp || !data.offered_price) {
+        if (!data.id || !data.mrp || !data.offered_price || !data.no_of_packs) {
           throw new AppError("Invalid data in the file", 400);
         }
-        const { id, offered_price, mrp } = data;
+        const { id, offered_price, mrp, pack_size, no_of_packs } = data;
 
         console.log(id);
         if (
@@ -384,11 +384,13 @@ async function updateBulkProducts(req, res) {
           isNaN(offered_price) ||
           offered_price <= 0 ||
           isNaN(mrp) ||
-          mrp <= 0
+          mrp <= 0 ||
+          isNaN(pack_size) ||
+          isNaN(no_of_packs)
         ) {
           throw new AppError("Invalid data format in the file", 400);
         }
-        str += `update \`pack_sizes\` set \`offered_price\`=${offered_price},mrp=${data.mrp} where \`id\`=${id};`;
+        str += `update \`pack_sizes\` set \`offered_price\`=${offered_price},mrp=${mrp},no_of_packs=${no_of_packs},pack_size=${pack_size} where \`id\`=${id};`;
       });
       console.log(str);
       const response = await db.query(str);
