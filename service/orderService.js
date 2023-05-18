@@ -8,6 +8,9 @@ const getOrderByCustomerId = async (req, res, next) => {
     console.log(req.path.split("/").filter((part) => part !== ""));
     let path = req.path.split("/").filter((part) => part !== "")[0];
     const customer_id = req.params.id;
+    if (!customer_id) {
+      throw new AppError("Missing customer ID", 400);
+    }
     let query = "";
     if (path == "past") {
       query = `select o.*,s.status_type from orders o join status s on o.order_id=s.orderId
@@ -33,7 +36,16 @@ const order = async (req, res, next) => {
     // }
     //req.body = {customer id-2, product id-3,4}}
 
-    const { customer_id, order_details, payment_type } = req.body;
+    const expectedFields = ["customer_id", "order_details", "payment_type"];
+
+    const missingFields = expectedFields.filter((field) => !order[field]);
+
+    if (missingFields.length > 0) {
+      const errorMessage = `Missing required fields: ${missingFields.join(
+        ", "
+      )}`;
+      throw new AppError(errorMessage, 400);
+    }
     const order_details_string = "'" + JSON.stringify(order_details) + "'";
     let total_price = order_details.reduce((sum, cur) => {
       sum += cur.price;
@@ -107,6 +119,13 @@ const getStockAvailabailityByProduct = async (req, res, next) => {
   //db call to update the row
   try {
     const { order_details } = req.body;
+    if (
+      !order_details ||
+      !Array.isArray(order_details) ||
+      order_details.length === 0
+    ) {
+      throw new AppError("Invalid order details", 400);
+    }
     console.log("dd", order_details);
     // let order_product_ids=[];
     let avail_query = ` select product_id from stock where `;
