@@ -1,0 +1,28 @@
+SELECT category_id, GROUP_CONCAT(CONCAT('{name:"', name,'",category_id:"',category_id,'",category_name:"',category_name,'",product_image:"',product_image, '",pack_sizes_json:', pack_sizes_json, '}')) AS list
+FROM (
+  SELECT prod.*, JSON_ARRAYAGG(
+    JSON_OBJECT(
+      'product_id', pass.product_id,
+      'product_name', pass.product_name,
+      'mrp', pass.mrp,
+      'offered_price', pass.offered_price,
+      'no_of_packs', pass.no_of_packs,
+      'pack_size', pass.pack_size,
+      'description', pass.description
+    )
+  ) AS pack_sizes_json
+  FROM (
+    SELECT s.id, s.name, s.description, s.product_image, cat.id AS category_id, cat.name AS category_name
+    FROM (
+      SELECT *
+      FROM (
+        SELECT *, RANK() OVER (PARTITION BY category_id ORDER BY id DESC) r
+        FROM products
+      ) sq
+      WHERE sq.r <= 2
+    ) s
+    JOIN categories cat ON s.category_id = cat.id
+  ) prod
+  LEFT JOIN pack_sizes pass ON prod.id = pass.product_id
+  GROUP BY prod.id, prod.name, prod.description, prod.product_image, prod.category_id, prod.category_name
+) res;
