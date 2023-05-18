@@ -7,28 +7,63 @@ const path = require("path");
 
 //getAll
 async function getAll(req, res, next) {
-  let query = `SELECT category_id, GROUP_CONCAT(CONCAT('{name:"', name,'",category_id:"',category_id,'",category_name:"',category_name,'",product_image:"',product_image, '"}')) list FROM 
-  (select s.id,s.name,s.description,s.product_image,cat.id as category_id,cat.name as category_name from(select * from(select *,RANK() over 
-  (partition by category_id order by id desc)r from products)sq where sq.r<=2)s join categories cat on s.category_id=cat.id)res 
-  GROUP BY category_id;`;
+  // let query = `SELECT category_id, GROUP_CONCAT(CONCAT('{name:"', name,'",category_id:"',category_id,'",category_name:"',category_name,'",product_image:"',product_image, '"}')) list FROM
+  // (select s.id,s.name,s.description,s.product_image,cat.id as category_id,cat.name as category_name from(select * from(select *,RANK() over
+  // (partition by category_id order by id desc)r from products)sq where sq.r<=2)s join categories cat on s.category_id=cat.id)res
+  // GROUP BY category_id;`;
+
+  let query = `SET SESSION sql_mode = "";`;
+  const SESSION = await db.query(query);
+  query = `SET SESSION group_concat_max_len = 18446744073709551615; `;
+  await db.query(query);
+  console.log("SESSION", SESSION);
+
+  query = `    SELECT prod.*, JSON_ARRAYAGG(
+    JSON_OBJECT(
+      'product_id', pass.product_id,
+      'product_name', pass.product_name,
+      'mrp', pass.mrp,
+      'offered_price', pass.offered_price,
+      'no_of_packs', pass.no_of_packs,
+      'pack_size', pass.pack_size,
+      'description', pass.description
+    )
+  ) AS pack_sizes
+  FROM (
+    SELECT s.id, s.name, s.description, s.product_image, cat.id AS category_id, cat.name AS category_name
+    FROM (
+      SELECT *
+      FROM (
+        SELECT *, RANK() OVER (PARTITION BY category_id ORDER BY id DESC) r
+        FROM products
+      ) sq
+      WHERE sq.r <= 2
+    ) s
+    JOIN categories cat ON s.category_id = cat.id
+  ) prod
+  LEFT JOIN pack_sizes pass ON prod.id = pass.product_id
+  GROUP BY prod.id, prod.name, prod.description, prod.product_image, prod.category_id, prod.category_name order by prod.id desc`;
   const resultList = await db.query(query);
-  // console.log(resultList);
-  const result = [];
+  console.log(resultList);
+
+  const latest_result = [];
+  const other_result = [];
   const regex = /,(?![^{]*\})/g;
+
   resultList.map((row) => {
-    const objStrings = row.list.split(regex);
-    let obj1 = eval("(" + objStrings[0] + ")");
-    let obj2 = eval("(" + objStrings[1] + ")");
-
+    const objStrings = row.pack_sizes.split(regex);
     let arr = [];
-    arr.push(obj1);
-    arr.push(obj2);
-
-    result.push({
-      category_id: row.category_id,
-      list: arr,
+    objStrings.forEach((element) => {
+      let modified = element.replace(/[\[\]]/g, "");
+      console.log(eval("(" + modified + ")"));
+      arr.push(eval("(" + modified + ")"));
+    });
+    latest_result.push({
+      ...row,
+      pack_sizes: arr,
     });
   });
+
   // query = ` select s.id,s.name,s.product_image,cat.id as category_id,cat.name as category_name from(select * from(select *,RANK() over
   // (partition by category_id order by id desc)r from products)sq where sq.r>2)s join categories cat on s.category_id=cat.id;`;
 
@@ -42,7 +77,7 @@ async function getAll(req, res, next) {
       'pack_size', pass.pack_size,
       'description', pass.description
     )
-  ) AS pack_sizes_json
+  ) AS pack_sizes
   FROM (
     SELECT s.id, s.name, s.product_image, cat.id AS category_id, cat.name AS category_name
     FROM (
@@ -58,9 +93,24 @@ async function getAll(req, res, next) {
   LEFT JOIN pack_sizes pass ON prod.id = pass.product_id
   GROUP BY prod.id, prod.name, prod.product_image, prod.category_id, prod.category_name  order by prod.id desc;`;
   const response = await db.query(query);
+
+  response.map((row) => {
+    const objStrings = row.pack_sizes.split(regex);
+    let arr = [];
+    objStrings.forEach((element) => {
+      let modified = element.replace(/[\[\]]/g, "");
+      console.log(eval("(" + modified + ")"));
+      arr.push(eval("(" + modified + ")"));
+    });
+    other_result.push({
+      ...row,
+      pack_sizes: arr,
+    });
+  });
+
   res.json({
-    latest: result,
-    restProducts: response,
+    latest: latest_result,
+    restProducts: other_result,
   });
 }
 
