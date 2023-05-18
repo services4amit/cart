@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "23ee74b5-1083-4d9f-8ac1-9f6c24fbe475",
+		"_postman_id": "c5eadbd4-ec72-4c0f-b697-0d5039424773",
 		"name": "Cart-APIS",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -264,6 +264,39 @@
 						"cart",
 						"getcheckoutitem",
 						"40"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get-downloadFileForBulkUpload",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3100/product/downloadFileForBulkUpload/2",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3100",
+					"path": [
+						"product",
+						"downloadFileForBulkUpload",
+						"2"
 					]
 				}
 			},
