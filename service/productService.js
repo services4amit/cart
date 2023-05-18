@@ -3,6 +3,7 @@ const errorHandler = require("../util/errorHandler");
 const AppError = require("../util/appError");
 const db = require("../util/connection");
 const xlsx = require("xlsx");
+const path = require("path");
 
 //getAll
 async function getAll(req, res, next) {
@@ -28,10 +29,10 @@ async function getAll(req, res, next) {
       list: arr,
     });
   });
-  // query = ` select s.id,s.name,s.product_image,cat.id as category_id,cat.name as category_name from(select * from(select *,RANK() over 
+  // query = ` select s.id,s.name,s.product_image,cat.id as category_id,cat.name as category_name from(select * from(select *,RANK() over
   // (partition by category_id order by id desc)r from products)sq where sq.r>2)s join categories cat on s.category_id=cat.id;`;
 
-  query=`SELECT prod.*, JSON_ARRAYAGG(
+  query = `SELECT prod.*, JSON_ARRAYAGG(
     JSON_OBJECT(
       'product_id', pass.product_id,
       'product_name', pass.product_name,
@@ -55,7 +56,7 @@ async function getAll(req, res, next) {
     JOIN categories cat ON s.category_id = cat.id
   ) prod
   LEFT JOIN pack_sizes pass ON prod.id = pass.product_id
-  GROUP BY prod.id, prod.name, prod.product_image, prod.category_id, prod.category_name  order by prod.id desc;`
+  GROUP BY prod.id, prod.name, prod.product_image, prod.category_id, prod.category_name  order by prod.id desc;`;
   const response = await db.query(query);
   res.json({
     latest: result,
@@ -169,8 +170,6 @@ async function addProduct(req, res) {
       throw new AppError(errorMessage, 400);
     }
 
-  
-
     if (
       isNaN(product.total_stock) ||
       isNaN(product.b2b_stock) ||
@@ -191,11 +190,6 @@ async function addProduct(req, res) {
       );
     }
 
-
-    
-
-
-
     console.log("add Product");
     const description_string = JSON.stringify(product.description);
     let query = `INSERT INTO products (name, description, category_id, product_image)
@@ -207,7 +201,7 @@ async function addProduct(req, res) {
       WHERE id = ${product.category_id};`;
     console.log("add Product", query);
     let response = await db.query(query);
-    console.log("prod",response)
+    console.log("prod", response);
     if (response.insertId === 0) {
       throw new Error("Invalid category id");
     }
@@ -215,29 +209,26 @@ async function addProduct(req, res) {
     VALUES (${response.insertId}, ${product.total_stock}, ${product.b2b_stock}, ${product.b2c_stock}, 0, 0, 0, 0, 0, 0);
     `;
     stock_response = await db.query(query);
-    
 
-  
-   
-    let pack_sizes_sql = 'INSERT INTO pack_sizes (product_id, product_name, mrp, offered_price, no_of_packs, pack_size, description) VALUES ?';
-    let data=product.pack_sizes.map((obj)=>{
-
+    let pack_sizes_sql =
+      "INSERT INTO pack_sizes (product_id, product_name, mrp, offered_price, no_of_packs, pack_size, description) VALUES ?";
+    let data = product.pack_sizes.map((obj) => {
       return {
-        product_id:response.insertId,
+        product_id: response.insertId,
         product_name: product.name,
         mrp: obj.mrp,
         offered_price: obj.offered_price,
         no_of_packs: obj.no_of_packs,
         pack_size: obj.pack_size,
         description: obj.description,
-        }
+      };
     });
 
-   
-    
-    console.log(data)
-    console.log("values",[data.map(Object.values)])
-    let pack_sizes_sql_response = await db.query(pack_sizes_sql, [data.map(Object.values)]);
+    console.log(data);
+    console.log("values", [data.map(Object.values)]);
+    let pack_sizes_sql_response = await db.query(pack_sizes_sql, [
+      data.map(Object.values),
+    ]);
 
     res.json(response);
   } catch (err) {
@@ -328,19 +319,26 @@ async function updateBulkProducts(req, res) {
       const filePath = req.file.path;
       const workbook = xlsx.readFile(filePath);
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+      const jsonData = xlsx.utils.sheet_to_json(worksheet, { header: 0 });
+      console.log(jsonData);
       let str = "";
       jsonData.forEach((data) => {
-        if (!data[0] || !data[1]) {
+        if (!data.id || !data.mrp || !data.offered_price) {
           throw new AppError("Invalid data in the file", 400);
         }
-        const productId = parseInt(data[0]);
-        const price = parseFloat(data[1]);
+        const { id, offered_price, mrp } = data;
 
-        if (isNaN(productId) || isNaN(price) || price <= 0) {
+        console.log(id);
+        if (
+          isNaN(id) ||
+          isNaN(offered_price) ||
+          offered_price <= 0 ||
+          isNaN(mrp) ||
+          mrp <= 0
+        ) {
           throw new AppError("Invalid data format in the file", 400);
         }
-        str += `update \`products\` set \`price\`=${data[1]} where \`id\`=${data[0]};`;
+        str += `update \`pack_sizes\` set \`offered_price\`=${offered_price},mrp=${data.mrp} where \`id\`=${id};`;
       });
       console.log(str);
       const response = await db.query(str);
@@ -361,6 +359,31 @@ async function updateBulkProducts(req, res) {
     errorHandler(err, res);
   }
 }
+async function downloadFileForBulkUpload(req, res, next) {
+  try {
+    const query = `select ps.id ,ps.product_id, ps.pack_size,ps.product_name, ps.mrp,ps.offered_price  from pack_sizes ps join products p on p.id = ps.product_id where p.category_id =${req.params.category_id};
+    `;
+    const result = await db.query(query);
+    const rows = result.map((row) => ({ ...row }));
+    const workbook = xlsx.utils.book_new(); //creates a new excel sheet with a new book
+    const worksheet = xlsx.utils.json_to_sheet(rows); //rows to table
+    xlsx.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+    const filename = "query_result.xlsx";
+    xlsx.writeFile(workbook, filename);
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=query_result.xlsx"
+    );
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    const absolutePath = path.resolve(filename);
+    res.sendFile(absolutePath);
+  } catch (err) {
+    console.error(err);
+  }
+}
 
 module.exports = {
   getAll,
@@ -370,4 +393,5 @@ module.exports = {
   addProduct,
   updateProductById,
   updateBulkProducts,
+  downloadFileForBulkUpload,
 };
