@@ -18,6 +18,7 @@ const {
   updateProductById,
   updateBulkProducts,
   getAll,
+  downloadFileForBulkUpload,
 } = require("../service/productService");
 var router = express.Router();
 const storage = multer.diskStorage({
@@ -49,5 +50,10 @@ router.put("/updateproduct/:id", updateProductById);
 
 // PUT route for /updatebulkproduct
 router.patch("/updatebulkproduct", upload.single("file"), updateBulkProducts);
+
+router.get(
+  "/downloadFileForBulkUpload/:category_id",
+  downloadFileForBulkUpload
+);
 
 module.exports = router;
