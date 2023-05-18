@@ -6,8 +6,8 @@ const xlsx = require("xlsx");
 
 //getAll
 async function getAll(req, res, next) {
-  let query = `SELECT category_id, GROUP_CONCAT(CONCAT('{name:"', name, '", price:"',price,'",category_id:"',category_id,'",category_name:"',category_name,'",product_image:"',product_image, '"}')) list FROM 
-  (select s.id,s.name,s.price,s.description,s.product_image,cat.id as category_id,cat.name as category_name from(select * from(select *,RANK() over 
+  let query = `SELECT category_id, GROUP_CONCAT(CONCAT('{name:"', name,'",category_id:"',category_id,'",category_name:"',category_name,'",product_image:"',product_image, '"}')) list FROM 
+  (select s.id,s.name,s.description,s.product_image,cat.id as category_id,cat.name as category_name from(select * from(select *,RANK() over 
   (partition by category_id order by id desc)r from products)sq where sq.r<=2)s join categories cat on s.category_id=cat.id)res 
   GROUP BY category_id;`;
   const resultList = await db.query(query);
@@ -28,8 +28,34 @@ async function getAll(req, res, next) {
       list: arr,
     });
   });
-  query = ` select s.id,s.name,s.price,s.product_image,cat.id as category_id,cat.name as category_name from(select * from(select *,RANK() over 
-  (partition by category_id order by id desc)r from products)sq where sq.r>2)s join categories cat on s.category_id=cat.id;`;
+  // query = ` select s.id,s.name,s.product_image,cat.id as category_id,cat.name as category_name from(select * from(select *,RANK() over 
+  // (partition by category_id order by id desc)r from products)sq where sq.r>2)s join categories cat on s.category_id=cat.id;`;
+
+  query=`SELECT prod.*, JSON_ARRAYAGG(
+    JSON_OBJECT(
+      'product_id', pass.product_id,
+      'product_name', pass.product_name,
+      'mrp', pass.mrp,
+      'offered_price', pass.offered_price,
+      'no_of_packs', pass.no_of_packs,
+      'pack_size', pass.pack_size,
+      'description', pass.description
+    )
+  ) AS pack_sizes_json
+  FROM (
+    SELECT s.id, s.name, s.product_image, cat.id AS category_id, cat.name AS category_name
+    FROM (
+      SELECT *
+      FROM (
+        SELECT *, RANK() OVER (PARTITION BY category_id ORDER BY id DESC) r
+        FROM products
+      ) sq
+      WHERE sq.r > 2
+    ) s
+    JOIN categories cat ON s.category_id = cat.id
+  ) prod
+  LEFT JOIN pack_sizes pass ON prod.id = pass.product_id
+  GROUP BY prod.id, prod.name, prod.product_image, prod.category_id, prod.category_name  order by prod.id desc;`
   const response = await db.query(query);
   res.json({
     latest: result,
@@ -136,9 +162,7 @@ async function addProduct(req, res) {
       throw new AppError("Missing required fields", 400);
     }
 
-    if (isNaN(product.price) || product.price <= 0) {
-      throw new AppError("Invalid price value", 400);
-    }
+  
 
     if (
       isNaN(product.total_stock) ||
@@ -159,25 +183,55 @@ async function addProduct(req, res) {
         "Total stock is not equal to the sum of b2b and b2c stock"
       );
     }
+
+
+    
+
+
+
     console.log("add Product");
     const description_string = JSON.stringify(product.description);
-    let query = `INSERT INTO products (name, description, price, category_id, product_image)
+    let query = `INSERT INTO products (name, description, category_id, product_image)
       SELECT '${product.name}',
       '${description_string}',
-      ${product.price},
       ${product.category_id},
       '${product.product_image}'
       FROM categories
       WHERE id = ${product.category_id};`;
     console.log("add Product", query);
     let response = await db.query(query);
+    console.log("prod",response)
     if (response.insertId === 0) {
       throw new Error("Invalid category id");
     }
     query = `INSERT INTO stock (product_id, total_stock, b2b_stock, b2c_stock, b2b_inward, b2c_inward, b2b_dump, b2c_dump, b2b_remaining, b2c_remaining)
     VALUES (${response.insertId}, ${product.total_stock}, ${product.b2b_stock}, ${product.b2c_stock}, 0, 0, 0, 0, 0, 0);
     `;
-    response = await db.query(query);
+    stock_response = await db.query(query);
+    
+
+  
+   
+    let pack_sizes_sql = 'INSERT INTO pack_sizes (product_id, product_name, mrp, offered_price, no_of_packs, pack_size, description) VALUES ?';
+    let data=product.pack_sizes.map((obj)=>{
+
+      return {
+        product_id:response.insertId,
+        product_name: product.name,
+        mrp: obj.mrp,
+        offered_price: obj.offered_price,
+        no_of_packs: obj.no_of_packs,
+        pack_size: obj.pack_size,
+        description: obj.description,
+        }
+    });
+
+   
+    
+    console.log(data)
+    console.log("values",[data.map(Object.values)])
+    let pack_sizes_sql_response = await db.query(pack_sizes_sql, [data.map(Object.values)]);
+
     res.json(response);
   } catch (err) {
     err.statusCode = err.statusCode || 500;
