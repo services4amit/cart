@@ -5,13 +5,24 @@ const db = require("../util/connection");
 const xlsx = require("xlsx");
 const path = require("path");
 
+function product_packs_create(arr) {
+  const regex = /,(?![^{]*\})/g;
 
+  return arr.reduce((sum, row) => {
+    const objStrings = row.pack_sizes.split(regex);
+    let arr = [];
+    objStrings.forEach((element) => {
+      let modified = element.replace(/[\[\]]/g, "");
 
-function product_packs_create(obj){
-  obj["net_weight"]=obj.pack_size*obj.no_of_packs;
-  obj["total_price"]=obj.net_weight*obj.offered_price;
-  obj["discount"]=((obj.mrp-obj.offered_price)/obj.mrp)*100;
-  return obj;
+      let obj = eval("(" + modified + ")");
+      arr.push(obj);
+    });
+    sum.push({
+      ...row,
+      pack_sizes: arr,
+    });
+    return sum;
+  }, []);
 }
 //getAll
 async function getAll(req, res, next) {
@@ -26,7 +37,7 @@ async function getAll(req, res, next) {
   await db.query(query);
   console.log("SESSION", SESSION);
 
-  query = `    SELECT prod.*, JSON_ARRAYAGG(
+  query = `SELECT prod.*, JSON_ARRAYAGG(
     JSON_OBJECT(
       'product_id', pass.product_id,
       'product_name', pass.product_name,
@@ -34,7 +45,10 @@ async function getAll(req, res, next) {
       'offered_price', pass.offered_price,
       'no_of_packs', pass.no_of_packs,
       'pack_size', pass.pack_size,
-      'description', pass.description
+      'description', pass.description,
+      'net_weight',pass.net_weight,
+      'total_price',pass.total_price,
+      'discount',pass.discount
     )
   ) AS pack_sizes
   FROM (
@@ -52,31 +66,27 @@ async function getAll(req, res, next) {
   LEFT JOIN pack_sizes pass ON prod.id = pass.product_id
   GROUP BY prod.id, prod.name, prod.description, prod.product_image, prod.category_id, prod.category_name order by prod.id desc`;
   const resultList = await db.query(query);
-  console.log(resultList);
+  // console.log(resultList);
 
-  const latest_result = [];
-  const other_result = [];
-  const regex = /,(?![^{]*\})/g;
+  // const latest_result = [];
+  // const other_result = [];
+  // const regex = /,(?![^{]*\})/g;
 
-  resultList.map((row) => {
-    const objStrings = row.pack_sizes.split(regex);
-    let arr = [];
-    objStrings.forEach((element) => {
-      let modified = element.replace(/[\[\]]/g, "");
-  
-      let obj=eval("(" + modified + ")");
-      product_packs_create(obj)
-      // obj["net_weight"]=obj.pack_size*obj.no_of_packs;
-      // obj["total_price"]=obj.net_weight*obj.offered_price;
-      // obj["discount"]=((obj.mrp-obj.offered_price)/obj.mrp)*100;
-      console.log("obj ",obj)
-      arr.push(obj);
-    });
-    latest_result.push({
-      ...row,
-      pack_sizes: arr,
-    });
-  });
+  // resultList.map((row) => {
+  //   const objStrings = row.pack_sizes.split(regex);
+  //   let arr = [];
+  //   objStrings.forEach((element) => {
+  //     let modified = element.replace(/[\[\]]/g, "");
+
+  //     let obj = eval("(" + modified + ")");
+  //     console.log("obj ", obj);
+  //     arr.push(obj);
+  //   });
+  //   latest_result.push({
+  //     ...row,
+  //     pack_sizes: arr,
+  //   });
+  // });
 
   // query = ` select s.id,s.name,s.product_image,cat.id as category_id,cat.name as category_name from(select * from(select *,RANK() over
   // (partition by category_id order by id desc)r from products)sq where sq.r>2)s join categories cat on s.category_id=cat.id;`;
@@ -89,7 +99,10 @@ async function getAll(req, res, next) {
       'offered_price', pass.offered_price,
       'no_of_packs', pass.no_of_packs,
       'pack_size', pass.pack_size,
-      'description', pass.description
+      'description', pass.description,
+      'net_weight',pass.net_weight,
+      'total_price',pass.total_price,
+      'discount',pass.discount
     )
   ) AS pack_sizes
   FROM (
@@ -108,24 +121,24 @@ async function getAll(req, res, next) {
   GROUP BY prod.id, prod.name, prod.product_image, prod.category_id, prod.category_name  order by prod.id desc;`;
   const response = await db.query(query);
 
-  response.map((row) => {
-    const objStrings = row.pack_sizes.split(regex);
-    let arr = [];
-    objStrings.forEach((element) => {
-      let modified = element.replace(/[\[\]]/g, "");
-      let obj=eval("(" + modified + ")");
-      product_packs_create(obj)
-      arr.push(obj);
-    });
-    other_result.push({
-      ...row,
-      pack_sizes: arr,
-    });
-  });
+  // response.map((row) => {
+  //   const objStrings = row.pack_sizes.split(regex);
+  //   let arr = [];
+  //   objStrings.forEach((element) => {
+  //     let modified = element.replace(/[\[\]]/g, "");
+  //     let obj = eval("(" + modified + ")");
+  //     product_packs_create(obj);
+  //     arr.push(obj);
+  //   });
+  //   other_result.push({
+  //     ...row,
+  //     pack_sizes: arr,
+  //   });
+  // });
 
   res.json({
-    latest: latest_result,
-    restProducts: other_result,
+    latest: product_packs_create(resultList),
+    restProducts: product_packs_create(response),
   });
 }
 
@@ -145,10 +158,10 @@ async function getProductDetailsById(req, res) {
     let product = await db.query(query);
     query = `SELECT c.*  FROM products p join pack_sizes c on p.id=c.product_id WHERE p.id = ${productId}`;
     let packs = await db.query(query);
-    packs=packs.map((obj)=>{
-      console.log(obj)
-     return product_packs_create(obj)
-    })
+    // packs = packs.map((obj) => {
+    //   console.log(obj);
+    //   return product_packs_create(obj);
+    // });
     console.log(packs);
     if (product.length > 0) {
       product[0]["pack_sizes"] = packs;
@@ -174,7 +187,7 @@ async function getProductsBySearchString(req, res) {
     }
     const searchString = req.params.searchString;
     // const query = `SELECT * FROM products WHERE name LIKE '%${searchString}%' OR description LIKE '%${searchString}%'`;
-    const query=`SELECT prod.*, JSON_ARRAYAGG(
+    const query = `SELECT prod.id, prod.name, prod.description, prod.product_image, prod.category_id, JSON_ARRAYAGG(
       JSON_OBJECT(
         'product_id', pass.product_id,
         'product_name', pass.product_name,
@@ -186,11 +199,12 @@ async function getProductsBySearchString(req, res) {
       )
     ) AS pack_sizes
     FROM (
-     SELECT * FROM products pd  WHERE pd.id= 62 
+     SELECT * FROM products pd  WHERE pd.name LIKE '%${searchString}%'
        ) prod
-    LEFT JOIN pack_sizes pass ON prod.id = pass.product_id;`
+    LEFT JOIN pack_sizes pass ON prod.id = pass.product_id GROUP BY prod.id;`;
+    console.log(query);
     const product = await db.query(query);
-    res.json(product);
+    res.json(product_packs_create(product));
   } catch (err) {
     err.statusCode = err.statusCode || 500;
     err.status = err.status || "ERROR";
