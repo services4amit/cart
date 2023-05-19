@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "c5eadbd4-ec72-4c0f-b697-0d5039424773",
+		"_postman_id": "218a9422-c466-4fef-928d-edb27000d3e0",
 		"name": "Cart-APIS",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -214,7 +214,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"customer_id\": 40,\n    \"order_details\": [\n        {\n            \"product_id\": 2,\n            \"product_quantity\": 2,\n            \"pack_details\": {\n                \"pack_id\": 1,\n                \"size\": 10,\n                \"description\": \"Pack of 10 small items\"\n            },\n            \"price\": 440\n        }\n    ]\n}\n",
+					"raw": "{\n    \"customer_id\": 40,\n    \"order_details\": [\n        {\n            \"product_id\": 1,\n            \"product_quantity\": 4,\n            \"pack_id\": 1\n        }\n    ]\n}",
 					"options": {
 						"raw": {
 							"language": "json"
