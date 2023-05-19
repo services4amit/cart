@@ -99,7 +99,20 @@ const getCheckoutItem = async (req, res, next) => {
     }
     const query = `select * from cart where customer_id=${customer_id} and active=1`;
     console.log(query);
-    const checkoutItems = await db.query(query);
+    let checkoutItems = await db.query(query);
+    console.log(checkoutItems);
+    checkoutItems[0].order_details = JSON.parse(checkoutItems[0].order_details);
+    for (let i = 0; i < checkoutItems[0].order_details.length; i++) {
+      console.log(checkoutItems[0].order_details[i]);
+      let pack = checkoutItems[0].order_details[i];
+      const query = `select * from pack_sizes where id=${pack.pack_id}; `;
+      let pack_size = await db.query(query);
+      checkoutItems[0].order_details[i] = {
+        ...checkoutItems[0].order_details[i],
+        ...pack_size[0],
+      };
+    }
+
     res.json(checkoutItems);
   } catch (err) {
     err.statusCode = err.statusCode || 500;
