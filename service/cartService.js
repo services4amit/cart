@@ -12,8 +12,29 @@ const getCartByCustomerId = async (req, res, next) => {
     const query = `select * from cart
    where customer_id=${customer_id}`;
     console.log(query);
-    const response = await db.query(query);
-    res.json(response);
+    let checkoutItems = await db.query(query);
+    console.log(checkoutItems);
+
+    for (let j = 0; j < checkoutItems.length; j++) {
+      checkoutItems[j].order_details = JSON.parse(
+        checkoutItems[j].order_details
+      );
+      for (let i = 0; i < checkoutItems[j].order_details.length; i++) {
+        console.log(checkoutItems[j].order_details[i]);
+        let pack = checkoutItems[j].order_details[i];
+        const query = `select * from pack_sizes where id=${pack.pack_id}; `;
+        let pack_size = await db.query(query);
+        checkoutItems[j].order_details[i] = {
+          ...checkoutItems[j].order_details[i],
+          ...pack_size[0],
+        };
+      }
+    }
+
+    res.json(checkoutItems);
+    // console.log(query);
+    // const response = await db.query(query);
+    // res.json(response);
   } catch (err) {
     err.statusCode = err.statusCode || 500;
     err.status = err.status || "ERROR";
