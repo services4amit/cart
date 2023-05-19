@@ -328,7 +328,7 @@ async function addProduct(req, res) {
       data.map(Object.values),
     ]);
 
-    res.json(response);
+    res.json("product added successfully");
   } catch (err) {
     err.statusCode = err.statusCode || 500;
     err.status = err.status || "ERROR";
@@ -396,7 +396,7 @@ async function updateProductById(req, res) {
     console.log(query);
     product = await db.query(query);
     console.log("stock");
-    res.json(product);
+    res.json("Product updated");
   } catch (err) {
     err.statusCode = err.statusCode || 500;
     err.status = err.status || "ERROR";

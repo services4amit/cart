@@ -55,7 +55,7 @@ const addToCart = async (req, res, next) => {
       `;
     console.log(query);
     const product = await db.query(query);
-    res.json(product);
+    res.json("Product added to cart");
   } catch (err) {
     err.statusCode = err.statusCode || 500;
     err.status = err.status || "ERROR";
