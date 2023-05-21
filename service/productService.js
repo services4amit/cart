@@ -30,13 +30,20 @@ async function getAll(req, res, next) {
   // (select s.id,s.name,s.description,s.product_image,cat.id as category_id,cat.name as category_name from(select * from(select *,RANK() over
   // (partition by category_id order by id desc)r from products)sq where sq.r<=2)s join categories cat on s.category_id=cat.id)res
   // GROUP BY category_id;`;
+  const isFirstReq = req.query.page ? false : true;
+  console.log(req.query.page);
+  let limit = 6;
+  let offset = 0;
+  if (!isFirstReq) {
+    limit = 1;
+    offset = req.query.page * limit;
+  }
 
   let query = `SET SESSION sql_mode = "";`;
   const SESSION = await db.query(query);
   query = `SET SESSION group_concat_max_len = 18446744073709551615; `;
   await db.query(query);
   console.log("SESSION", SESSION);
-
   query = `SELECT prod.*, JSON_ARRAYAGG(
     JSON_OBJECT(
       'product_id', pass.product_id,
@@ -49,10 +56,7 @@ async function getAll(req, res, next) {
       'net_weight',pass.net_weight,
       'total_sale_price',pass.total_sale_price,
       'total_mrp',pass.total_mrp,
-      'discount',pass.discount,
-      'available',(
-        SELECT EXISTS(SELECT product_id FROM stock WHERE product_id = pass.product_id AND b2b_stock >= pass.net_weight) 
-    )
+      'discount',pass.discount
     )
   ) AS pack_sizes
   FROM (
@@ -63,7 +67,7 @@ async function getAll(req, res, next) {
         SELECT *, RANK() OVER (PARTITION BY category_id ORDER BY id DESC) r
         FROM products
       ) sq
-      WHERE sq.r <= 3 LIMIT 9 OFFSET 0
+      WHERE sq.r <= 3 LIMIT ${limit} OFFSET ${offset}
     ) s
     JOIN categories cat ON s.category_id = cat.id
   ) prod
@@ -107,10 +111,7 @@ async function getAll(req, res, next) {
       'net_weight',pass.net_weight,
       'total_sale_price',pass.total_sale_price,
       'total_mrp',pass.total_mrp,
-      'discount',pass.discount,
-      'available',(
-        SELECT EXISTS(SELECT product_id FROM stock WHERE product_id = pass.product_id AND b2b_stock >= pass.net_weight) 
-    )
+      'discount',pass.discount
     )
   ) AS pack_sizes
   FROM (
@@ -121,7 +122,7 @@ async function getAll(req, res, next) {
         SELECT *, RANK() OVER (PARTITION BY category_id ORDER BY id DESC) r
         FROM products
       ) sq
-      WHERE sq.r > 2
+      WHERE sq.r > 2 LIMIT 6 OFFSET 1
     ) s
     JOIN categories cat ON s.category_id = cat.id
   ) prod
@@ -143,12 +144,15 @@ async function getAll(req, res, next) {
   //     pack_sizes: arr,
   //   });
   // });
-  res.status(200).json({
+  const result = {
     status: 200,
     message: "get cart by customer Id successful",
-    latest: product_packs_create(resultList),
     restProducts: product_packs_create(response),
-  });
+  };
+  if (isFirstReq) {
+    result["latest"] = product_packs_create(resultList);
+  }
+  res.status(200).json(result);
 }
 
 async function getProductDetailsById(req, res) {
