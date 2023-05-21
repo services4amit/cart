@@ -209,7 +209,7 @@ async function getProductsBySearchString(req, res) {
       throw new AppError("searchString must be present", 400);
     }
     const searchString = req.params.searchString;
-    // const query = `SELECT * FROM products WHERE name LIKE '%${searchString}%' OR description LIKE '%${searchString}%'`;
+    // const query = `SELECT * FROM products WHERE name LIKE '%${searchString}%' OR description LIKE '%${searchString}%'`; //available
     const query = `SELECT prod.id, prod.name, prod.description, prod.product_image, prod.category_id, JSON_ARRAYAGG(
       JSON_OBJECT(
         'product_id', pass.product_id,
@@ -218,7 +218,8 @@ async function getProductsBySearchString(req, res) {
         'offered_price', pass.offered_price,
         'no_of_packs', pass.no_of_packs,
         'pack_size', pass.pack_size,
-        'description', pass.description
+        'description', pass.description,
+        'available', 
       )
     ) AS pack_sizes
     FROM (
@@ -250,10 +251,20 @@ async function getProductsByCategory(req, res) {
       throw new AppError("body must be present", 400);
     }
     const categoryId = req.params.category_id;
-    const query = `SELECT p.*,c.name as category_name
+    const query = ` SELECT prod.id, prod.name, prod.description, prod.product_image, prod.category_id, JSON_ARRAYAGG(
+      JSON_OBJECT(
+        'product_id', pass.product_id,
+        'product_name', pass.product_name,
+        'mrp', pass.mrp,
+        'offered_price', pass.offered_price,
+        'no_of_packs', pass.no_of_packs,
+        'pack_size', pass.pack_size,
+        'description', pass.description
+      )
+    ) AS pack_sizes FROM (  SELECT p.*,c.name as category_name
     FROM products AS p
     INNER JOIN categories AS c ON p.category_id = c.id
-    WHERE c.id = ${categoryId} limit ${limit} offset ${offset}
+    WHERE c.id = ${categoryId}) prod LEFT JOIN pack_sizes pass ON prod.id = pass.product_id GROUP BY prod.id limit ${limit} offset ${offset}
   `;
     const product = await db.query(query);
     res.json(product);
