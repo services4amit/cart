@@ -11,6 +11,6 @@ router.post("/", order);
 router.get("/past/:id", getOrderByCustomerId);
 router.get("/active/:id", getOrderByCustomerId);
 
-router.post("/stockavalabilitybyproduct", getStockAvailabailityByProduct);
+router.get("/stockavalabilitybyproduct", getStockAvailabailityByProduct);
 
 module.exports = router;
