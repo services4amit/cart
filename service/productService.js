@@ -47,7 +47,8 @@ async function getAll(req, res, next) {
       'pack_size', pass.pack_size,
       'description', pass.description,
       'net_weight',pass.net_weight,
-      'total_price',pass.total_price,
+      'total_sale_price',pass.total_sale_price,
+      'total_mrp',pass.total_mrp,
       'discount',pass.discount
     )
   ) AS pack_sizes
@@ -59,7 +60,7 @@ async function getAll(req, res, next) {
         SELECT *, RANK() OVER (PARTITION BY category_id ORDER BY id DESC) r
         FROM products
       ) sq
-      WHERE sq.r <= 2
+      WHERE sq.r <= 3 LIMIT 9 OFFSET 0
     ) s
     JOIN categories cat ON s.category_id = cat.id
   ) prod
@@ -101,7 +102,8 @@ async function getAll(req, res, next) {
       'pack_size', pass.pack_size,
       'description', pass.description,
       'net_weight',pass.net_weight,
-      'total_price',pass.total_price,
+      'total_sale_price',pass.total_sale_price,
+      'total_mrp',pass.total_mrp,
       'discount',pass.discount
     )
   ) AS pack_sizes
