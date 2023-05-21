@@ -152,8 +152,6 @@ async function getAll(req, res, next) {
   //   });
   // });
   const result = {
-    status: 200,
-    message: "get cart by customer Id successful",
     restProducts: product_packs_create(response),
   };
   if (isFirstReq) {
