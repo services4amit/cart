@@ -254,7 +254,7 @@ async function getProductsByCategory(req, res) {
       throw new AppError("body must be present", 400);
     }
     const categoryId = req.params.category_id;
-    const query = ` SELECT prod.id, prod.name, prod.description, prod.product_image, prod.category_id, JSON_ARRAYAGG(
+    const query = ` SELECT prod.id, prod.name, prod.product_image, prod.category_id, JSON_ARRAYAGG(
       JSON_OBJECT(
         'product_id', pass.product_id,
         'product_name', pass.product_name,
@@ -262,7 +262,6 @@ async function getProductsByCategory(req, res) {
         'offered_price', pass.offered_price,
         'no_of_packs', pass.no_of_packs,
         'pack_size', pass.pack_size,
-        'description', pass.description,#
         'available',(
           SELECT EXISTS(SELECT product_id FROM stock WHERE product_id = pass.product_id AND b2b_stock >= pass.net_weight) 
         )
