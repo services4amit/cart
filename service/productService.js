@@ -71,7 +71,7 @@ async function getAll(req, res, next) {
         SELECT *, RANK() OVER (PARTITION BY category_id ORDER BY id DESC) r
         FROM products
       ) sq
-      WHERE sq.r <= 3 LIMIT ${limit} OFFSET ${offset}
+      WHERE sq.r <= 3 LIMIT 9 OFFSET 0
     ) s
     JOIN categories cat ON s.category_id = cat.id
   ) prod
