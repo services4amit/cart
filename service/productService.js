@@ -49,7 +49,10 @@ async function getAll(req, res, next) {
       'net_weight',pass.net_weight,
       'total_sale_price',pass.total_sale_price,
       'total_mrp',pass.total_mrp,
-      'discount',pass.discount
+      'discount',pass.discount,
+      'available',(
+        SELECT EXISTS(SELECT product_id FROM stock WHERE product_id = pass.product_id AND b2b_stock >= pass.net_weight) 
+    )
     )
   ) AS pack_sizes
   FROM (
@@ -104,7 +107,10 @@ async function getAll(req, res, next) {
       'net_weight',pass.net_weight,
       'total_sale_price',pass.total_sale_price,
       'total_mrp',pass.total_mrp,
-      'discount',pass.discount
+      'discount',pass.discount,
+      'available',(
+        SELECT EXISTS(SELECT product_id FROM stock WHERE product_id = pass.product_id AND b2b_stock >= pass.net_weight) 
+    )
     )
   ) AS pack_sizes
   FROM (
