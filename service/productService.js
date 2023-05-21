@@ -137,8 +137,9 @@ async function getAll(req, res, next) {
   //     pack_sizes: arr,
   //   });
   // });
-
-  res.json({
+  res.status(200).json({
+    status: 200,
+    message: "get cart by customer Id successful",
     latest: product_packs_create(resultList),
     restProducts: product_packs_create(response),
   });
@@ -169,6 +170,11 @@ async function getProductDetailsById(req, res) {
       product[0]["pack_sizes"] = packs;
     }
     res.json(product);
+    res.status(200).json({
+      status: 200,
+      message: "get product by Id successful",
+      product,
+    });
   } catch (err) {
     err.statusCode = err.statusCode || 500;
     err.status = err.status || "ERROR";
@@ -330,7 +336,10 @@ async function addProduct(req, res) {
       data.map(Object.values),
     ]);
 
-    res.json("product added successfully");
+    res.status(200).json({
+      status: 200,
+      message: "product added successfully",
+    });
   } catch (err) {
     err.statusCode = err.statusCode || 500;
     err.status = err.status || "ERROR";
@@ -398,7 +407,9 @@ async function updateProductById(req, res) {
     console.log(query);
     product = await db.query(query);
     console.log("stock");
-    res.json("Product updated");
+    res
+      .status(200)
+      .json({ status: 200, message: "product updated successfully" });
   } catch (err) {
     err.statusCode = err.statusCode || 500;
     err.status = err.status || "ERROR";
@@ -445,7 +456,9 @@ async function updateBulkProducts(req, res) {
       console.log(str);
       const response = await db.query(str);
       console.log(response);
-      res.status(200).json({ message: "File uploaded successfully" });
+      res
+        .status(200)
+        .json({ status: 200, message: "File uploaded successfully" });
     } else {
       // No file was uploaded
       res.status(400).json({ message: "No file uploaded" });
