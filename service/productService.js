@@ -398,7 +398,6 @@ async function updateProductById(req, res) {
     const productId = req.params.id;
     const updatedProduct = req.body;
     const expectedFields = [
-      "name",
       "description",
       "price",
       "product_image",
@@ -431,8 +430,7 @@ async function updateProductById(req, res) {
     }
     let query = `
     UPDATE products
-    SET name = '${updatedProduct.name}',
-        description = '${JSON.stringify(updatedProduct.description)}',
+    SET description = '${JSON.stringify(updatedProduct.description)}',
         price = ${updatedProduct.price},
         product_image='${updatedProduct.product_image}'
     WHERE id = ${productId}
