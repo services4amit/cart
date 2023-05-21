@@ -185,8 +185,6 @@ async function getProductDetailsById(req, res) {
       product[0]["pack_sizes"] = packs;
     }
     res.status(200).json({
-      status: 200,
-      message: "get product by Id successful",
       product,
     });
   } catch (err) {
