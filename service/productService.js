@@ -4,6 +4,7 @@ const AppError = require("../util/appError");
 const db = require("../util/connection");
 const xlsx = require("xlsx");
 const path = require("path");
+const IsFirstReq = require("../util/isFirstReq");
 
 function product_packs_create(arr) {
   const regex = /,(?![^{]*\})/g;
@@ -30,13 +31,21 @@ async function getAll(req, res, next) {
   // (select s.id,s.name,s.description,s.product_image,cat.id as category_id,cat.name as category_name from(select * from(select *,RANK() over
   // (partition by category_id order by id desc)r from products)sq where sq.r<=2)s join categories cat on s.category_id=cat.id)res
   // GROUP BY category_id;`;
+  const isFirstReq = IsFirstReq(req.query.page);
+  let limit = 6;
+  let offset = 0;
+  if (!isFirstReq) {
+    limit = 15;
+    offset = 6 + limit * (parseInt(req.query.page) - 1);
+    console.log("inside not first req");
+    console.log(limit, "limit", offset, "offset");
+  }
 
   let query = `SET SESSION sql_mode = "";`;
   const SESSION = await db.query(query);
   query = `SET SESSION group_concat_max_len = 18446744073709551615; `;
   await db.query(query);
   console.log("SESSION", SESSION);
-
   query = `SELECT prod.*, JSON_ARRAYAGG(
     JSON_OBJECT(
       'product_id', pass.product_id,
@@ -70,6 +79,7 @@ async function getAll(req, res, next) {
   LEFT JOIN pack_sizes pass ON prod.id = pass.product_id
   GROUP BY prod.id, prod.name, prod.description, prod.product_image, prod.category_id, prod.category_name order by prod.id desc`;
   const resultList = await db.query(query);
+
   // console.log(resultList);
 
   // const latest_result = [];
@@ -107,10 +117,7 @@ async function getAll(req, res, next) {
       'net_weight',pass.net_weight,
       'total_sale_price',pass.total_sale_price,
       'total_mrp',pass.total_mrp,
-      'discount',pass.discount,
-      'available',(
-        SELECT EXISTS(SELECT product_id FROM stock WHERE product_id = pass.product_id AND b2b_stock >= pass.net_weight) 
-    )
+      'discount',pass.discount
     )
   ) AS pack_sizes
   FROM (
@@ -121,12 +128,43 @@ async function getAll(req, res, next) {
         SELECT *, RANK() OVER (PARTITION BY category_id ORDER BY id DESC) r
         FROM products
       ) sq
-      WHERE sq.r > 2
+      WHERE sq.r > 3 LIMIT ${limit} OFFSET ${offset}
     ) s
     JOIN categories cat ON s.category_id = cat.id
   ) prod
   LEFT JOIN pack_sizes pass ON prod.id = pass.product_id
   GROUP BY prod.id, prod.name, prod.product_image, prod.category_id, prod.category_name  order by prod.id desc;`;
+  // if (!isFirstReq) {
+  //   query = `SELECT prod.*, JSON_ARRAYAGG(
+  //     JSON_OBJECT(
+  //       'product_id', pass.product_id,
+  //       'product_name', pass.product_name,
+  //       'mrp', pass.mrp,
+  //       'offered_price', pass.offered_price,
+  //       'no_of_packs', pass.no_of_packs,
+  //       'pack_size', pass.pack_size,
+  //       'description', pass.description,
+  //       'net_weight',pass.net_weight,
+  //       'total_sale_price',pass.total_sale_price,
+  //       'total_mrp',pass.total_mrp,
+  //       'discount',pass.discount
+  //     )
+  //   ) AS pack_sizes
+  //   FROM (
+  //     SELECT s.id, s.name, s.product_image, cat.id AS category_id, cat.name AS category_name
+  //     FROM (
+  //       SELECT *
+  //       FROM (
+  //         SELECT *, RANK() OVER (PARTITION BY category_id ORDER BY id DESC) r
+  //         FROM products
+  //       ) sq
+  //      LIMIT ${limit} OFFSET ${offset}
+  //     ) s
+  //     JOIN categories cat ON s.category_id = cat.id
+  //   ) prod
+  //   LEFT JOIN pack_sizes pass ON prod.id = pass.product_id
+  //   GROUP BY prod.id, prod.name, prod.product_image, prod.category_id, prod.category_name  order by prod.id desc;`;
+  // }
   const response = await db.query(query);
 
   // response.map((row) => {
@@ -143,12 +181,13 @@ async function getAll(req, res, next) {
   //     pack_sizes: arr,
   //   });
   // });
-  res.status(200).json({
-    status: 200,
-    message: "get cart by customer Id successful",
-    latest: product_packs_create(resultList),
+  const result = {
     restProducts: product_packs_create(response),
-  });
+  };
+  if (isFirstReq) {
+    result["latest"] = product_packs_create(resultList);
+  }
+  res.status(200).json(result);
 }
 
 async function getProductDetailsById(req, res) {
@@ -165,7 +204,13 @@ async function getProductDetailsById(req, res) {
 
     console.log(query);
     let product = await db.query(query);
-    query = `SELECT c.*  FROM products p join pack_sizes c on p.id=c.product_id WHERE p.id = ${productId}`;
+    query = `SELECT c.*, 
+    case 
+    when (SELECT EXISTS(SELECT product_id FROM stock WHERE product_id = c.product_id AND b2b_stock >= c.net_weight))
+    then 'true'
+    else 'false'
+    end 
+    as available  FROM products p join pack_sizes c on p.id=c.product_id WHERE p.id = ${productId}`;
     let packs = await db.query(query);
     // packs = packs.map((obj) => {
     //   console.log(obj);
@@ -175,10 +220,7 @@ async function getProductDetailsById(req, res) {
     if (product.length > 0) {
       product[0]["pack_sizes"] = packs;
     }
-    res.json(product);
     res.status(200).json({
-      status: 200,
-      message: "get product by Id successful",
       product,
     });
   } catch (err) {
@@ -196,6 +238,11 @@ async function getProductDetailsById(req, res) {
 // Retrieve products based on search string
 async function getProductsBySearchString(req, res) {
   try {
+    const limit = 15;
+    let offset = 0;
+    offset = IsFirstReq(req.query.page) ? 0 : limit * parseInt(req.query.page);
+    console.log("offset", offset);
+
     if (!req.params.searchString) {
       throw new AppError("searchString must be present", 400);
     }
@@ -209,13 +256,16 @@ async function getProductsBySearchString(req, res) {
         'offered_price', pass.offered_price,
         'no_of_packs', pass.no_of_packs,
         'pack_size', pass.pack_size,
-        'description', pass.description
+        'description', pass.description,
+        'available', (
+          SELECT EXISTS(SELECT product_id FROM stock WHERE product_id = pass.product_id AND b2b_stock >= pass.net_weight) 
+      )
       )
     ) AS pack_sizes
     FROM (
      SELECT * FROM products pd  WHERE pd.name LIKE '%${searchString}%'
        ) prod
-    LEFT JOIN pack_sizes pass ON prod.id = pass.product_id GROUP BY prod.id;`;
+    LEFT JOIN pack_sizes pass ON prod.id = pass.product_id GROUP BY prod.id limit ${limit} offset ${offset};`;
     console.log(query);
     const product = await db.query(query);
     res.json(product_packs_create(product));
@@ -234,17 +284,32 @@ async function getProductsBySearchString(req, res) {
 // Retrieve products by category
 async function getProductsByCategory(req, res) {
   try {
+    const limit = 15;
+    let offset = 0;
+    offset = IsFirstReq(req.query.page) ? 0 : limit * parseInt(req.query.page);
     if (!req.params.category_id) {
       throw new AppError("body must be present", 400);
     }
     const categoryId = req.params.category_id;
-    const query = `SELECT p.*,c.name as category_name
+    const query = ` SELECT prod.id, prod.name, prod.product_image, prod.category_id, prod.category_name, JSON_ARRAYAGG(
+      JSON_OBJECT(
+        'product_id', pass.product_id,
+        'product_name', pass.product_name,
+        'mrp', pass.mrp,
+        'offered_price', pass.offered_price,
+        'no_of_packs', pass.no_of_packs,
+        'pack_size', pass.pack_size,
+        'available',(
+          SELECT EXISTS(SELECT product_id FROM stock WHERE product_id = pass.product_id AND b2b_stock >= pass.net_weight) 
+        )
+      )
+    ) AS pack_sizes FROM (  SELECT p.*,c.name as category_name
     FROM products AS p
     INNER JOIN categories AS c ON p.category_id = c.id
-    WHERE c.id = ${categoryId}
+    WHERE c.id = ${categoryId}) prod LEFT JOIN pack_sizes pass ON prod.id = pass.product_id GROUP BY prod.id limit ${limit} offset ${offset}
   `;
     const product = await db.query(query);
-    res.json(product);
+    res.json(product_packs_create(product));
   } catch (err) {
     err.statusCode = err.statusCode || 500;
     err.status = err.status || "ERROR";
@@ -367,7 +432,6 @@ async function updateProductById(req, res) {
     const productId = req.params.id;
     const updatedProduct = req.body;
     const expectedFields = [
-      "name",
       "description",
       "price",
       "product_image",
@@ -400,8 +464,7 @@ async function updateProductById(req, res) {
     }
     let query = `
     UPDATE products
-    SET name = '${updatedProduct.name}',
-        description = '${JSON.stringify(updatedProduct.description)}',
+    SET description = '${JSON.stringify(updatedProduct.description)}',
         price = ${updatedProduct.price},
         product_image='${updatedProduct.product_image}'
     WHERE id = ${productId}
