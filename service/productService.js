@@ -174,7 +174,7 @@ async function getProductDetailsById(req, res) {
 
     console.log(query);
     let product = await db.query(query);
-    query = `SELECT c.*  FROM products p join pack_sizes c on p.id=c.product_id WHERE p.id = ${productId}`;
+    query = `SELECT c.*, (SELECT EXISTS(SELECT product_id FROM stock WHERE product_id = c.product_id AND b2b_stock >= c.net_weight)) as available  FROM products p join pack_sizes c on p.id=c.product_id WHERE p.id = ${productId}`;
     let packs = await db.query(query);
     // packs = packs.map((obj) => {
     //   console.log(obj);
@@ -221,7 +221,9 @@ async function getProductsBySearchString(req, res) {
         'no_of_packs', pass.no_of_packs,
         'pack_size', pass.pack_size,
         'description', pass.description,
-        'available', 
+        'available', (
+          SELECT EXISTS(SELECT product_id FROM stock WHERE product_id = pass.product_id AND b2b_stock >= pass.net_weight) 
+      )
       )
     ) AS pack_sizes
     FROM (
