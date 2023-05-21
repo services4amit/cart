@@ -37,6 +37,7 @@ async function getAll(req, res, next) {
   if (!isFirstReq) {
     limit = 15;
     offset = limit * parseInt(req.query.page);
+    console.log("inside not first req");
   }
 
   let query = `SET SESSION sql_mode = "";`;
@@ -76,10 +77,7 @@ async function getAll(req, res, next) {
   ) prod
   LEFT JOIN pack_sizes pass ON prod.id = pass.product_id
   GROUP BY prod.id, prod.name, prod.description, prod.product_image, prod.category_id, prod.category_name order by prod.id desc`;
-  let resultList = [];
-  if (isFirstReq) {
-    resultList = await db.query(query);
-  }
+  const resultList = await db.query(query);
 
   // console.log(resultList);
 
@@ -135,6 +133,37 @@ async function getAll(req, res, next) {
   ) prod
   LEFT JOIN pack_sizes pass ON prod.id = pass.product_id
   GROUP BY prod.id, prod.name, prod.product_image, prod.category_id, prod.category_name  order by prod.id desc;`;
+  if (!isFirstReq) {
+    query = `SELECT prod.*, JSON_ARRAYAGG(
+      JSON_OBJECT(
+        'product_id', pass.product_id,
+        'product_name', pass.product_name,
+        'mrp', pass.mrp,
+        'offered_price', pass.offered_price,
+        'no_of_packs', pass.no_of_packs,
+        'pack_size', pass.pack_size,
+        'description', pass.description,
+        'net_weight',pass.net_weight,
+        'total_sale_price',pass.total_sale_price,
+        'total_mrp',pass.total_mrp,
+        'discount',pass.discount
+      )
+    ) AS pack_sizes
+    FROM (
+      SELECT s.id, s.name, s.product_image, cat.id AS category_id, cat.name AS category_name
+      FROM (
+        SELECT *
+        FROM (
+          SELECT *, RANK() OVER (PARTITION BY category_id ORDER BY id DESC) r
+          FROM products
+        ) sq
+       LIMIT ${limit} OFFSET ${offset}
+      ) s
+      JOIN categories cat ON s.category_id = cat.id
+    ) prod
+    LEFT JOIN pack_sizes pass ON prod.id = pass.product_id
+    GROUP BY prod.id, prod.name, prod.product_image, prod.category_id, prod.category_name  order by prod.id desc;`;
+  }
   const response = await db.query(query);
 
   // response.map((row) => {
