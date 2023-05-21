@@ -10,8 +10,6 @@ CREATE TABLE categories (
 INSERT INTO
   `categories`
 VALUES
-  ('eptk'),
-  ('opsd'),
-  ('uvdy'),
-  ('zmgd'),
-  ('dbbk');
+  ('vegies'),
+  ('milk'),
+  ('fruits')
