@@ -174,7 +174,13 @@ async function getProductDetailsById(req, res) {
 
     console.log(query);
     let product = await db.query(query);
-    query = `SELECT c.*, (SELECT EXISTS(SELECT product_id FROM stock WHERE product_id = c.product_id AND b2b_stock >= c.net_weight)) as available  FROM products p join pack_sizes c on p.id=c.product_id WHERE p.id = ${productId}`;
+    query = `SELECT c.*, 
+    case 
+    when (SELECT EXISTS(SELECT product_id FROM stock WHERE product_id = c.product_id AND b2b_stock >= c.net_weight))
+    then 'true'
+    else 'false'
+    end 
+    as available  FROM products p join pack_sizes c on p.id=c.product_id WHERE p.id = ${productId}`;
     let packs = await db.query(query);
     // packs = packs.map((obj) => {
     //   console.log(obj);
