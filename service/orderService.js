@@ -102,7 +102,11 @@ const order = async (req, res, next) => {
 
     const update_order = await db.query(update_order_query);
     console.log("update_order ", update_order);
-    res.json({ order_id: order.insertId });
+    res.status(200).json({
+      status: 200,
+      message: "Order created successfully",
+      order_id: order.insertId,
+    });
   } catch (err) {
     err.statusCode = err.statusCode || 500;
     err.status = err.status || "ERROR";
