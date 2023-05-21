@@ -291,7 +291,7 @@ async function getProductsByCategory(req, res) {
       throw new AppError("body must be present", 400);
     }
     const categoryId = req.params.category_id;
-    const query = ` SELECT prod.id, prod.name, prod.product_image, prod.category_id, JSON_ARRAYAGG(
+    const query = ` SELECT prod.id, prod.name, prod.product_image, prod.category_id, prod.category_name, JSON_ARRAYAGG(
       JSON_OBJECT(
         'product_id', pass.product_id,
         'product_name', pass.product_name,
@@ -309,7 +309,7 @@ async function getProductsByCategory(req, res) {
     WHERE c.id = ${categoryId}) prod LEFT JOIN pack_sizes pass ON prod.id = pass.product_id GROUP BY prod.id limit ${limit} offset ${offset}
   `;
     const product = await db.query(query);
-    res.json(product);
+    res.json(product_packs_create(product));
   } catch (err) {
     err.statusCode = err.statusCode || 500;
     err.status = err.status || "ERROR";
