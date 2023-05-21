@@ -4,6 +4,7 @@ const AppError = require("../util/appError");
 const db = require("../util/connection");
 const xlsx = require("xlsx");
 const path = require("path");
+const IsFirstReq = require("../util/isFirstReq");
 
 function product_packs_create(arr) {
   const regex = /,(?![^{]*\})/g;
@@ -179,7 +180,6 @@ async function getProductDetailsById(req, res) {
     if (product.length > 0) {
       product[0]["pack_sizes"] = packs;
     }
-    res.json(product);
     res.status(200).json({
       status: 200,
       message: "get product by Id successful",
@@ -200,6 +200,11 @@ async function getProductDetailsById(req, res) {
 // Retrieve products based on search string
 async function getProductsBySearchString(req, res) {
   try {
+    const limit = 15;
+    let offset = 0;
+    offset = IsFirstReq(req.query.page) ? limit * req.query.page : 0;
+    console.log("offset", offset);
+
     if (!req.params.searchString) {
       throw new AppError("searchString must be present", 400);
     }
@@ -219,7 +224,7 @@ async function getProductsBySearchString(req, res) {
     FROM (
      SELECT * FROM products pd  WHERE pd.name LIKE '%${searchString}%'
        ) prod
-    LEFT JOIN pack_sizes pass ON prod.id = pass.product_id GROUP BY prod.id;`;
+    LEFT JOIN pack_sizes pass ON prod.id = pass.product_id GROUP BY prod.id limit ${limit} offset ${offset};`;
     console.log(query);
     const product = await db.query(query);
     res.json(product_packs_create(product));
@@ -238,6 +243,9 @@ async function getProductsBySearchString(req, res) {
 // Retrieve products by category
 async function getProductsByCategory(req, res) {
   try {
+    const limit = 15;
+    let offset = 0;
+    offset = IsFirstReq(req.query.page) ? limit * req.query.page : 0;
     if (!req.params.category_id) {
       throw new AppError("body must be present", 400);
     }
@@ -245,7 +253,7 @@ async function getProductsByCategory(req, res) {
     const query = `SELECT p.*,c.name as category_name
     FROM products AS p
     INNER JOIN categories AS c ON p.category_id = c.id
-    WHERE c.id = ${categoryId}
+    WHERE c.id = ${categoryId} limit ${limit} offset ${offset}
   `;
     const product = await db.query(query);
     res.json(product);
