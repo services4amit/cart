@@ -152,8 +152,6 @@ async function getAll(req, res, next) {
   //   });
   // });
   const result = {
-    status: 200,
-    message: "get cart by customer Id successful",
     restProducts: product_packs_create(response),
   };
   if (isFirstReq) {
@@ -176,7 +174,13 @@ async function getProductDetailsById(req, res) {
 
     console.log(query);
     let product = await db.query(query);
-    query = `SELECT c.*  FROM products p join pack_sizes c on p.id=c.product_id WHERE p.id = ${productId}`;
+    query = `SELECT c.*, 
+    case 
+    when (SELECT EXISTS(SELECT product_id FROM stock WHERE product_id = c.product_id AND b2b_stock >= c.net_weight))
+    then 'true'
+    else 'false'
+    end 
+    as available  FROM products p join pack_sizes c on p.id=c.product_id WHERE p.id = ${productId}`;
     let packs = await db.query(query);
     // packs = packs.map((obj) => {
     //   console.log(obj);
@@ -187,8 +191,6 @@ async function getProductDetailsById(req, res) {
       product[0]["pack_sizes"] = packs;
     }
     res.status(200).json({
-      status: 200,
-      message: "get product by Id successful",
       product,
     });
   } catch (err) {
@@ -225,7 +227,9 @@ async function getProductsBySearchString(req, res) {
         'no_of_packs', pass.no_of_packs,
         'pack_size', pass.pack_size,
         'description', pass.description,
-        'available', 
+        'available', (
+          SELECT EXISTS(SELECT product_id FROM stock WHERE product_id = pass.product_id AND b2b_stock >= pass.net_weight) 
+      )
       )
     ) AS pack_sizes
     FROM (
@@ -398,7 +402,6 @@ async function updateProductById(req, res) {
     const productId = req.params.id;
     const updatedProduct = req.body;
     const expectedFields = [
-      "name",
       "description",
       "price",
       "product_image",
@@ -431,8 +434,7 @@ async function updateProductById(req, res) {
     }
     let query = `
     UPDATE products
-    SET name = '${updatedProduct.name}',
-        description = '${JSON.stringify(updatedProduct.description)}',
+    SET description = '${JSON.stringify(updatedProduct.description)}',
         price = ${updatedProduct.price},
         product_image='${updatedProduct.product_image}'
     WHERE id = ${productId}

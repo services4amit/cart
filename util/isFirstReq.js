@@ -3,7 +3,7 @@ const IsFirstReq = (param) => {
   if (param) {
     return parseInt(param) === 0;
   }
-  return false;
+  return true;
 };
 
 module.exports = IsFirstReq;
