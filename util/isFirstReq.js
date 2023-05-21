@@ -1,6 +1,7 @@
 const IsFirstReq = (param) => {
+  console.log(param);
   if (param) {
-    return true;
+    return parseInt(param) === 0;
   }
   return false;
 };

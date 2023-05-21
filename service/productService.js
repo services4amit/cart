@@ -31,13 +31,12 @@ async function getAll(req, res, next) {
   // (select s.id,s.name,s.description,s.product_image,cat.id as category_id,cat.name as category_name from(select * from(select *,RANK() over
   // (partition by category_id order by id desc)r from products)sq where sq.r<=2)s join categories cat on s.category_id=cat.id)res
   // GROUP BY category_id;`;
-  const isFirstReq = req.query.page ? false : true;
-  console.log(req.query.page);
+  const isFirstReq = IsFirstReq(req.query.page);
   let limit = 6;
   let offset = 0;
   if (!isFirstReq) {
-    limit = 1;
-    offset = req.query.page * limit;
+    limit = 15;
+    offset = limit * parseInt(req.query.page);
   }
 
   let query = `SET SESSION sql_mode = "";`;
@@ -77,7 +76,11 @@ async function getAll(req, res, next) {
   ) prod
   LEFT JOIN pack_sizes pass ON prod.id = pass.product_id
   GROUP BY prod.id, prod.name, prod.description, prod.product_image, prod.category_id, prod.category_name order by prod.id desc`;
-  const resultList = await db.query(query);
+  let resultList = [];
+  if (isFirstReq) {
+    resultList = await db.query(query);
+  }
+
   // console.log(resultList);
 
   // const latest_result = [];
@@ -126,7 +129,7 @@ async function getAll(req, res, next) {
         SELECT *, RANK() OVER (PARTITION BY category_id ORDER BY id DESC) r
         FROM products
       ) sq
-      WHERE sq.r > 2 LIMIT 6 OFFSET 1
+      WHERE sq.r > 2 LIMIT ${limit} OFFSET ${offset}
     ) s
     JOIN categories cat ON s.category_id = cat.id
   ) prod
@@ -205,14 +208,14 @@ async function getProductsBySearchString(req, res) {
   try {
     const limit = 15;
     let offset = 0;
-    offset = IsFirstReq(req.query.page) ? limit * req.query.page : 0;
+    offset = IsFirstReq(req.query.page) ? 0 : limit * parseInt(req.query.page);
     console.log("offset", offset);
 
     if (!req.params.searchString) {
       throw new AppError("searchString must be present", 400);
     }
     const searchString = req.params.searchString;
-    // const query = `SELECT * FROM products WHERE name LIKE '%${searchString}%' OR description LIKE '%${searchString}%'`; //available
+    // const query = `SELECT * FROM products WHERE name LIKE '%${searchString}%' OR description LIKE '%${searchString}%'`;
     const query = `SELECT prod.id, prod.name, prod.description, prod.product_image, prod.category_id, JSON_ARRAYAGG(
       JSON_OBJECT(
         'product_id', pass.product_id,
@@ -249,7 +252,7 @@ async function getProductsByCategory(req, res) {
   try {
     const limit = 15;
     let offset = 0;
-    offset = IsFirstReq(req.query.page) ? limit * req.query.page : 0;
+    offset = IsFirstReq(req.query.page) ? 0 : limit * parseInt(req.query.page);
     if (!req.params.category_id) {
       throw new AppError("body must be present", 400);
     }
