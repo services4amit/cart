@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "218a9422-c466-4fef-928d-edb27000d3e0",
+		"_postman_id": "093b7656-4939-4d89-a10b-280d552ce02b",
 		"name": "Cart-APIS",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -214,7 +214,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"customer_id\": 40,\n    \"order_details\": [\n        {\n            \"product_id\": 1,\n            \"product_quantity\": 4,\n            \"pack_id\": 1\n        }\n    ]\n}",
+					"raw": "{\n    \"customer_id\": 40,\n    \"order_details\": {\n        \"product_id\": 1,\n        \"pack_id\": 3,\n        \"product_quantity\": 1\n    }\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -231,6 +231,35 @@
 					"path": [
 						"cart",
 						"addtocart"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "PUT:update Cart",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n   \"customer_id\": 41,\n   \"order_details\":\n       {\n           \"product_id\": 1,\n           \"pack_id\":1,\n           \"product_quantity\": 4\n       }\n\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3100/cart/updatecart",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3100",
+					"path": [
+						"cart",
+						"updatecart"
 					]
 				}
 			},
@@ -365,13 +394,16 @@
 			"response": []
 		},
 		{
-			"name": "stockAvailabilityProduct",
+			"name": "stockavalabilitybycustomer",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
 			"request": {
-				"method": "POST",
+				"method": "GET",
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"customer_id\": 40,\r\n    \"order_details\": [\r\n        {\r\n            \"product_id\": 53,\r\n            \"product_quantity\": 2,\r\n            \"pack_details\": {\r\n                \"pack_id\": 1,\r\n                \"size\": 10,\r\n                \"description\": \"Pack of 10 small items\"\r\n            },\r\n            \"price\": 440\r\n        },\r\n         {\r\n            \"product_id\": 5,\r\n            \"product_quantity\": 2,\r\n            \"pack_details\": {\r\n                \"pack_id\": 1,\r\n                \"size\": 10,\r\n                \"description\": \"Pack of 10 small items\"\r\n            },\r\n            \"price\": 440\r\n        }\r\n    ]\r\n}\r\n",
+					"raw": "",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -379,27 +411,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:3100/order/stockavalabilitybyproduct",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "3100",
-					"path": [
-						"order",
-						"stockavalabilitybyproduct"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "getCheckoutItem",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "http://localhost:3100/cart/getcheckoutitem/40",
+					"raw": "http://localhost:3100/cart/stockavalabilitybycustomer/42",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -407,8 +419,8 @@
 					"port": "3100",
 					"path": [
 						"cart",
-						"getcheckoutitem",
-						"40"
+						"stockavalabilitybycustomer",
+						"42"
 					]
 				}
 			},
