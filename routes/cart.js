@@ -1,9 +1,9 @@
 var express = require("express");
 const {
   getCartByCustomerId,
-  getCheckoutItem,
   updateCartDetails,
   addToCart,
+  getStockAvailabailityByCustomer,
 } = require("../service/cartService");
 var router = express.Router();
 
@@ -14,8 +14,11 @@ router.post("/addtocart", addToCart);
 router.get("/getByCustomerId/:id", getCartByCustomerId);
 
 /* PUT  update cart details */
-router.put("/updatecart",updateCartDetails);
+router.put("/updatecart", updateCartDetails);
 
-/*GET checkout item */
-router.get("/getcheckoutitem/:id", getCheckoutItem);
+router.get(
+  "/stockavalabilitybycustomer/:customer_id",
+  getStockAvailabailityByCustomer
+);
+
 module.exports = router;
