@@ -96,8 +96,56 @@ const updateCartDetails = async (req, res, next) => {
   }
 };
 
+const getStockAvailabailityByCustomer = async (req, res, next) => {
+  //db call to update the row
+  const customer_id = req.params.customer_id;
+  console.log("getSTock");
+  try {
+    if (!customer_id) {
+      throw new AppError("Invalid customer Id", 400);
+    }
+
+    console.log(customer_id);
+    // let order_product_ids=[];
+    // let avail_query = ` select product_id from stock where `;
+    // order_details.forEach((element, index) => {
+    //   let str = "";
+    //   if (index == 0) {
+    //     str = `(product_id = ${element.product_id} and b2b_stock>=${element.product_quantity}*${element.pack_details.size} )`;
+    //   } else {
+    //     str = ` OR (product_id = ${element.product_id} and b2b_stock>=${element.product_quantity}*${element.pack_details.size} )`;
+    //   }
+    //   avail_query += str;
+    // });
+    const avail_query = `select cart.*, 
+    EXISTS(SELECT cart.product_id FROM stock WHERE cart.product_id = stock.product_id AND b2b_stock >= 50)as available 
+    from(select c.product_id,c.product_quantity, ps.product_name,ps.id as pack_id,ps.mrp,ps.offered_price,ps.no_of_packs,ps.pack_size,ps.description,
+    ps.net_weight,ps.total_price*c.product_quantity,ps.discount from cart c left join
+    pack_sizes ps on c.product_id=ps.product_id and c.pack_id=ps.id left join stock s on s.product_id=c.product_id where c.customer_id=${customer_id} )cart;`;
+    console.log(avail_query);
+
+    // let query = `select product_id from stock where (product_id =2 and b2b_stock>=20) OR (product_id =56 and b2b_stock>=10)`;
+    // // const query = `select product_id from stock where product_id in (${productid.slice(
+    // //   1,
+    // //   productid.length - 1
+    // // )})`;
+    const resultset = await db.query(avail_query);
+    res.json(resultset);
+  } catch (err) {
+    err.statusCode = err.statusCode || 500;
+    err.status = err.status || "ERROR";
+    res.status(err.statusCode).json({
+      status: err.status,
+      message: err.message,
+      stack: err.stack,
+    });
+    errorHandler(err, res);
+  }
+};
+
 module.exports = {
   addToCart,
   updateCartDetails,
   getCartByCustomerId,
+  getStockAvailabailityByCustomer,
 };
