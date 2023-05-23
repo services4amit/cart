@@ -9,35 +9,12 @@ const getCartByCustomerId = async (req, res, next) => {
     if (!customer_id) {
       throw new AppError("Missing customer ID", 400);
     }
-    const query = `select * from cart
-   where customer_id=${customer_id}`;
+    const query = `select c.product_id,c.product_quantity, ps.product_name,ps.id as pack_id,ps.mrp,ps.offered_price,ps.no_of_packs,ps.pack_size,ps.description,ps.net_weight,ps.total_price*c.product_quantity,ps.discount from cart c left join pack_sizes ps on c.product_id=ps.product_id and c.pack_id=ps.id where c.customer_id=${customer_id};`;
     console.log(query);
     let checkoutItems = await db.query(query);
-    console.log(checkoutItems);
-
-    for (let j = 0; j < checkoutItems.length; j++) {
-      checkoutItems[j].order_details = JSON.parse(
-        checkoutItems[j].order_details
-      );
-      for (let i = 0; i < checkoutItems[j].order_details.length; i++) {
-        console.log(checkoutItems[j].order_details[i]);
-        let pack = checkoutItems[j].order_details[i];
-        const query = `select * from pack_sizes where id=${pack.pack_id}; `;
-        let pack_size = await db.query(query);
-        checkoutItems[j].order_details[i] = {
-          ...checkoutItems[j].order_details[i],
-          ...pack_size[0],
-        };
-      }
-    }
     res.status(200).json({
-      status: 200,
-      message: "get cart by customer Id successful",
       checkoutItems,
     });
-    // console.log(query);
-    // const response = await db.query(query);
-    // res.json(response);
   } catch (err) {
     err.statusCode = err.statusCode || 500;
     err.status = err.status || "ERROR";
@@ -53,33 +30,29 @@ const getCartByCustomerId = async (req, res, next) => {
 
 const addToCart = async (req, res, next) => {
   try {
-    // if (!req.params.id) {
-    //   throw new AppError("id must be present", 400);
-    // }
-
     if (!req.body.customer_id || !req.body.order_details) {
       throw new AppError("customer_id and order_details must be present", 400);
     }
     const { customer_id, order_details } = req.body;
-    //update other rows to active false
-
-    const update_query = `UPDATE cart
-    SET active = 0
-    WHERE active = 1 and customer_id =${customer_id}`;
-    await db.query(update_query);
-
-    const order_details_string = "'" + JSON.stringify(order_details) + "'";
     const query = `INSERT INTO cart
     (
     customer_id,
-    order_details,
-    active)
+    product_id,
+    pack_id,
+    product_quantity,
+    created_by,
+    updated_by)
     VALUES
-    (${customer_id},${order_details_string},1)
+    (${customer_id},${order_details.product_id},${order_details.pack_id},${
+      order_details.product_quantity
+    },${null},${null});
+
+    select count(*) as count_of_products from cart where customer_id= ${customer_id};
       `;
+
     console.log(query);
     const product = await db.query(query);
-    res.status(200).json({ status: 200, message: "Product added to cart" });
+    res.json(product[1][0]);
   } catch (err) {
     err.statusCode = err.statusCode || 500;
     err.status = err.status || "ERROR";
@@ -92,27 +65,31 @@ const addToCart = async (req, res, next) => {
   }
 };
 
-//FIXME: use later
-// const updateCartDetails = async (req,res,next) => {
-
-//   try {
-//     const {customer_id, order_details} = req.body;
-//     const query = `update cart set order_details='${JSON.stringify(order_details)}' where customer_id = ${customer_id} and active =1`
-//     console.log(query);
-//     const result =await db.query(query);
-//     res.json(result)
-//   } catch (err) {
-//     err.statusCode = err.statusCode || 500;
-//     err.status = err.status || "ERROR";
-//     res.status(err.statusCode).json({
-//       status: err.status,
-//       message: err.message,
-//       stack: err.stack,
-//     });
-//     errorHandler(err, res);
-//   }
-//   return "id";
-// };
+const updateCartDetails = async (req, res, next) => {
+  try {
+    const { customer_id, order_details } = req.body;
+    const query = `update cart set pack_id=${order_details.pack_id}, product_quantity= ${order_details.product_quantity} where customer_id = ${customer_id} and product_id= ${order_details.product_id}`;
+    console.log(query);
+    const result = await db.query(query);
+    console.log(result);
+    if (result.message.includes("Rows matched: 0")) {
+      throw new Error("PRODUCT ID OR CUSTOMER ID IS NOT PRESENT");
+    }
+    res.status(200).json({
+      status: 200,
+      message: "Updated successfully",
+    });
+  } catch (err) {
+    err.statusCode = err.statusCode || 500;
+    err.status = err.status || "ERROR";
+    res.status(err.statusCode).json({
+      status: err.status,
+      message: err.message,
+      stack: err.stack,
+    });
+    errorHandler(err, res);
+  }
+};
 
 const getCheckoutItem = async (req, res, next) => {
   try {
@@ -152,7 +129,7 @@ const getCheckoutItem = async (req, res, next) => {
 
 module.exports = {
   addToCart,
-  // updateCartDetails,
+  updateCartDetails,
   getCartByCustomerId,
   getCheckoutItem,
 };
