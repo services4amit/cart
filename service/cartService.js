@@ -118,9 +118,9 @@ const getStockAvailabailityByCustomer = async (req, res, next) => {
     //   avail_query += str;
     // });
     const avail_query = `select cart.*, 
-    EXISTS(SELECT cart.product_id FROM stock WHERE cart.product_id = stock.product_id AND b2b_stock >= 50)as available 
+    EXISTS(SELECT cart.product_id FROM stock WHERE cart.product_id = stock.product_id AND b2b_stock >= cart.product_quantity*cart.net_weight )as available 
     from(select c.product_id,c.product_quantity, ps.product_name,ps.id as pack_id,ps.mrp,ps.offered_price,ps.no_of_packs,ps.pack_size,ps.description,
-    ps.net_weight,ps.total_price*c.product_quantity,ps.discount from cart c left join
+    ps.net_weight,ps.total_price*c.product_quantity as total_price,ps.discount from cart c left join
     pack_sizes ps on c.product_id=ps.product_id and c.pack_id=ps.id left join stock s on s.product_id=c.product_id where c.customer_id=${customer_id} )cart;`;
     console.log(avail_query);
 
