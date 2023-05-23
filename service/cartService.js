@@ -9,7 +9,10 @@ const getCartByCustomerId = async (req, res, next) => {
     if (!customer_id) {
       throw new AppError("Missing customer ID", 400);
     }
-    const query = `select c.product_id,c.product_quantity, ps.product_name,ps.id as pack_id,ps.mrp,ps.offered_price,ps.no_of_packs,ps.pack_size,ps.description,ps.net_weight,ps.total_price*c.product_quantity,ps.discount from cart c left join pack_sizes ps on c.product_id=ps.product_id and c.pack_id=ps.id where c.customer_id=${customer_id};`;
+    const query = `select c.product_id,c.product_quantity, ps.product_name,pd.description as product_description,pd.product_image,
+    ps.id as pack_id,ps.mrp,ps.offered_price,ps.no_of_packs,ps.pack_size,ps.description as pack_description, ps.net_weight,
+    ps.total_price*c.product_quantity as total_price,ps.discount from cart c left join pack_sizes ps on c.product_id=ps.product_id and 
+    c.pack_id=ps.id left join products pd on pd.id=c.product_id where c.customer_id=${customer_id};`;
     console.log(query);
     let checkoutItems = await db.query(query);
     res.status(200).json({
@@ -68,53 +71,19 @@ const addToCart = async (req, res, next) => {
 const updateCartDetails = async (req, res, next) => {
   try {
     const { customer_id, order_details } = req.body;
-    const query = `update cart set pack_id=${order_details.pack_id}, product_quantity= ${order_details.product_quantity} where customer_id = ${customer_id} and product_id= ${order_details.product_id}`;
+    const query = `update cart set pack_id=${order_details.pack_id}, product_quantity= ${order_details.product_quantity} where customer_id = ${customer_id} and product_id= ${order_details.product_id};
+    select c.product_id,c.product_quantity, ps.product_name,pd.description as product_description,pd.product_image,
+    ps.id as pack_id,ps.mrp,ps.offered_price,ps.no_of_packs,ps.pack_size,ps.description as pack_description, ps.net_weight,
+    ps.total_price*c.product_quantity as total_price,ps.discount from cart c left join pack_sizes ps on c.product_id=ps.product_id and 
+    c.pack_id=ps.id left join products pd on pd.id=c.product_id where c.customer_id=${customer_id};
+    `;
     console.log(query);
     const result = await db.query(query);
     console.log(result);
-    if (result.message.includes("Rows matched: 0")) {
+    if (result[0].message.includes("Rows matched: 0")) {
       throw new Error("PRODUCT ID OR CUSTOMER ID IS NOT PRESENT");
     }
-    res.status(200).json({
-      status: 200,
-      message: "Updated successfully",
-    });
-  } catch (err) {
-    err.statusCode = err.statusCode || 500;
-    err.status = err.status || "ERROR";
-    res.status(err.statusCode).json({
-      status: err.status,
-      message: err.message,
-      stack: err.stack,
-    });
-    errorHandler(err, res);
-  }
-};
-
-const getCheckoutItem = async (req, res, next) => {
-  try {
-    console.log("df");
-    const customer_id = req.params.id;
-    if (!customer_id) {
-      throw new AppError("Missing customer ID", 400);
-    }
-    const query = `select * from cart where customer_id=${customer_id} and active=1`;
-    console.log(query);
-    let checkoutItems = await db.query(query);
-    console.log(checkoutItems);
-    checkoutItems[0].order_details = JSON.parse(checkoutItems[0].order_details);
-    for (let i = 0; i < checkoutItems[0].order_details.length; i++) {
-      console.log(checkoutItems[0].order_details[i]);
-      let pack = checkoutItems[0].order_details[i];
-      const query = `select * from pack_sizes where id=${pack.pack_id}; `;
-      let pack_size = await db.query(query);
-      checkoutItems[0].order_details[i] = {
-        ...checkoutItems[0].order_details[i],
-        ...pack_size[0],
-      };
-    }
-
-    res.json(checkoutItems);
+    res.status(200).json(result[1]);
   } catch (err) {
     err.statusCode = err.statusCode || 500;
     err.status = err.status || "ERROR";
@@ -131,5 +100,4 @@ module.exports = {
   addToCart,
   updateCartDetails,
   getCartByCustomerId,
-  getCheckoutItem,
 };
