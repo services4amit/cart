@@ -119,50 +119,7 @@ const order = async (req, res, next) => {
   }
 };
 
-const getStockAvailabailityByProduct = async (req, res, next) => {
-  //db call to update the row
-  try {
-    const { order_details } = req.body;
-    if (
-      !order_details ||
-      !Array.isArray(order_details) ||
-      order_details.length === 0
-    ) {
-      throw new AppError("Invalid order details", 400);
-    }
-    console.log("dd", order_details);
-    // let order_product_ids=[];
-    let avail_query = ` select product_id from stock where `;
-    order_details.forEach((element, index) => {
-      let str = "";
-      if (index == 0) {
-        str = `(product_id = ${element.product_id} and b2b_stock>=${element.product_quantity}*${element.pack_details.size} )`;
-      } else {
-        str = ` OR (product_id = ${element.product_id} and b2b_stock>=${element.product_quantity}*${element.pack_details.size} )`;
-      }
-      avail_query += str;
-    });
-    console.log(avail_query);
-
-    // let query = `select product_id from stock where (product_id =2 and b2b_stock>=20) OR (product_id =56 and b2b_stock>=10)`;
-    // // const query = `select product_id from stock where product_id in (${productid.slice(
-    // //   1,
-    // //   productid.length - 1
-    // // )})`;
-    const resultset = await db.query(avail_query);
-    console.log(resultset);
-    let validProducts = [];
-    resultset.map((row) => {
-      validProducts.push(row.product_id);
-    });
-    res.json({ available_product_ids: validProducts });
-  } catch (err) {
-    res.json(err);
-  }
-};
-
 module.exports = {
   order,
   getOrderByCustomerId,
-  getStockAvailabailityByProduct,
 };
