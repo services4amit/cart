@@ -5,6 +5,13 @@ const db = require("../util/connection");
 const xlsx = require("xlsx");
 const path = require("path");
 const IsFirstReq = require("../util/isFirstReq");
+const {
+  PageSchema,
+  SearchStringSchema,
+  IdSchema,
+  AddproductSchema,
+  UpdateProductSchema,
+} = require("../JoiValidations/joiSchemas");
 
 function product_packs_create(arr) {
   const regex = /,(?![^{]*\})/g;
@@ -31,7 +38,14 @@ async function getAll(req, res, next) {
   // (select s.id,s.name,s.description,s.product_image,cat.id as category_id,cat.name as category_name from(select * from(select *,RANK() over
   // (partition by category_id order by id desc)r from products)sq where sq.r<=2)s join categories cat on s.category_id=cat.id)res
   // GROUP BY category_id;`;
-  const isFirstReq = IsFirstReq(req.query.page);
+
+  const { error, page } = PageSchema.validate(req.query.page);
+  if (error) {
+    console.error(error);
+    throw new Error(error);
+  }
+  const isFirstReq = IsFirstReq(page);
+
   let limit = 6;
   let offset = 0;
   if (!isFirstReq) {
@@ -80,31 +94,6 @@ async function getAll(req, res, next) {
   GROUP BY prod.id, prod.name, prod.description, prod.product_image, prod.category_id, prod.category_name order by prod.id desc`;
   const resultList = await db.query(query);
 
-  // console.log(resultList);
-
-  // const latest_result = [];
-  // const other_result = [];
-  // const regex = /,(?![^{]*\})/g;
-
-  // resultList.map((row) => {
-  //   const objStrings = row.pack_sizes.split(regex);
-  //   let arr = [];
-  //   objStrings.forEach((element) => {
-  //     let modified = element.replace(/[\[\]]/g, "");
-
-  //     let obj = eval("(" + modified + ")");
-  //     console.log("obj ", obj);
-  //     arr.push(obj);
-  //   });
-  //   latest_result.push({
-  //     ...row,
-  //     pack_sizes: arr,
-  //   });
-  // });
-
-  // query = ` select s.id,s.name,s.product_image,cat.id as category_id,cat.name as category_name from(select * from(select *,RANK() over
-  // (partition by category_id order by id desc)r from products)sq where sq.r>2)s join categories cat on s.category_id=cat.id;`;
-
   query = `SELECT prod.*, JSON_ARRAYAGG(
     JSON_OBJECT(
       'product_id', pass.product_id,
@@ -134,53 +123,7 @@ async function getAll(req, res, next) {
   ) prod
   LEFT JOIN pack_sizes pass ON prod.id = pass.product_id
   GROUP BY prod.id, prod.name, prod.product_image, prod.category_id, prod.category_name  order by prod.id desc;`;
-  // if (!isFirstReq) {
-  //   query = `SELECT prod.*, JSON_ARRAYAGG(
-  //     JSON_OBJECT(
-  //       'product_id', pass.product_id,
-  //       'product_name', pass.product_name,
-  //       'mrp', pass.mrp,
-  //       'offered_price', pass.offered_price,
-  //       'no_of_packs', pass.no_of_packs,
-  //       'pack_size', pass.pack_size,
-  //       'description', pass.description,
-  //       'net_weight',pass.net_weight,
-  //       'total_sale_price',pass.total_sale_price,
-  //       'total_mrp',pass.total_mrp,
-  //       'discount',pass.discount
-  //     )
-  //   ) AS pack_sizes
-  //   FROM (
-  //     SELECT s.id, s.name, s.product_image, cat.id AS category_id, cat.name AS category_name
-  //     FROM (
-  //       SELECT *
-  //       FROM (
-  //         SELECT *, RANK() OVER (PARTITION BY category_id ORDER BY id DESC) r
-  //         FROM products
-  //       ) sq
-  //      LIMIT ${limit} OFFSET ${offset}
-  //     ) s
-  //     JOIN categories cat ON s.category_id = cat.id
-  //   ) prod
-  //   LEFT JOIN pack_sizes pass ON prod.id = pass.product_id
-  //   GROUP BY prod.id, prod.name, prod.product_image, prod.category_id, prod.category_name  order by prod.id desc;`;
-  // }
   const response = await db.query(query);
-
-  // response.map((row) => {
-  //   const objStrings = row.pack_sizes.split(regex);
-  //   let arr = [];
-  //   objStrings.forEach((element) => {
-  //     let modified = element.replace(/[\[\]]/g, "");
-  //     let obj = eval("(" + modified + ")");
-  //     product_packs_create(obj);
-  //     arr.push(obj);
-  //   });
-  //   other_result.push({
-  //     ...row,
-  //     pack_sizes: arr,
-  //   });
-  // });
   const result = {
     restProducts: product_packs_create(response),
   };
@@ -193,10 +136,10 @@ async function getAll(req, res, next) {
 async function getProductDetailsById(req, res) {
   console.log("getProductDetailsById");
   try {
-    if (!req.params.id) {
-      throw new AppError("id must be present", 400);
+    const { err, productId } = IdSchema.validate(req.params.id);
+    if (err) {
+      throw new AppError(err, 400);
     }
-    const productId = req.params.id;
     let query = `SELECT p.*, c.name AS category_name
              FROM products p
              JOIN categories c ON p.category_id = c.id
@@ -212,10 +155,6 @@ async function getProductDetailsById(req, res) {
     end 
     as available  FROM products p join pack_sizes c on p.id=c.product_id WHERE p.id = ${productId}`;
     let packs = await db.query(query);
-    // packs = packs.map((obj) => {
-    //   console.log(obj);
-    //   return product_packs_create(obj);
-    // });
     console.log(packs);
     if (product.length > 0) {
       product[0]["pack_sizes"] = packs;
@@ -240,14 +179,18 @@ async function getProductsBySearchString(req, res) {
   try {
     const limit = 15;
     let offset = 0;
-    offset = IsFirstReq(req.query.page) ? 0 : limit * parseInt(req.query.page);
-    console.log("offset", offset);
-
-    if (!req.params.searchString) {
-      throw new AppError("searchString must be present", 400);
+    const { err, page } = PageSchema.validate(req.query.page);
+    if (err) {
+      throw new AppError(err, 400);
     }
-    const searchString = req.params.searchString;
-    // const query = `SELECT * FROM products WHERE name LIKE '%${searchString}%' OR description LIKE '%${searchString}%'`;
+    offset = IsFirstReq(page) ? 0 : limit * parseInt(page);
+    console.log("offset", offset);
+    const { error, searchString } = SearchStringSchema.validate(
+      req.params.searchString
+    );
+    if (error) {
+      throw new AppError(error, 400);
+    }
     const query = `SELECT prod.id, prod.name, prod.description, prod.product_image, prod.category_id, JSON_ARRAYAGG(
       JSON_OBJECT(
         'product_id', pass.product_id,
@@ -286,11 +229,15 @@ async function getProductsByCategory(req, res) {
   try {
     const limit = 15;
     let offset = 0;
-    offset = IsFirstReq(req.query.page) ? 0 : limit * parseInt(req.query.page);
-    if (!req.params.category_id) {
-      throw new AppError("body must be present", 400);
+    const { err, page } = PageSchema.validate(req.query.page);
+    if (err) {
+      throw new AppError(err);
     }
-    const categoryId = req.params.category_id;
+    offset = IsFirstReq(page) ? 0 : limit * parseInt(page);
+    const { error, categoryId } = IdSchema.validate(req.params.category_id);
+    if (error) {
+      throw new AppError(error, 400);
+    }
     const query = ` SELECT prod.id, prod.name, prod.product_image, prod.category_id, prod.category_name, JSON_ARRAYAGG(
       JSON_OBJECT(
         'product_id', pass.product_id,
@@ -325,40 +272,14 @@ async function getProductsByCategory(req, res) {
 // Add a new product
 async function addProduct(req, res) {
   try {
-    if (!req.body) {
-      throw new AppError("body must be present", 400);
-    }
-    const product = req.body;
-    const expectedFields = [
-      "name",
-      "category_id",
-      "product_image",
-      "total_stock",
-      "b2b_stock",
-      "b2c_stock",
-    ];
-
-    const missingFields = expectedFields.filter((field) => !product[field]);
-
-    if (missingFields.length > 0) {
-      const errorMessage = `Missing required fields: ${missingFields.join(
-        ", "
-      )}`;
-      throw new AppError(errorMessage, 400);
-    }
-
-    if (
-      isNaN(product.total_stock) ||
-      isNaN(product.b2b_stock) ||
-      isNaN(product.b2c_stock)
-    ) {
-      throw new AppError("Stock values must be numbers", 400);
+    const { error, product } = AddproductSchema.validate(req.body);
+    if (error) {
+      throw new AppError(error, 400);
     }
 
     if (product.total_stock != product.b2b_stock + product.b2c_stock) {
       throw new AppError("Total stock is not proper");
     }
-    const category_id = product.category_id;
     const calculatedTotalStock = product.b2b_stock + product.b2c_stock;
 
     if (product.total_stock !== calculatedTotalStock) {
@@ -366,7 +287,6 @@ async function addProduct(req, res) {
         "Total stock is not equal to the sum of b2b and b2c stock"
       );
     }
-
     console.log("add Product");
     const description_string = JSON.stringify(product.description);
     let query = `INSERT INTO products (name, description, category_id, product_image)
@@ -426,41 +346,14 @@ async function addProduct(req, res) {
 // Update a product by id
 async function updateProductById(req, res) {
   try {
-    if (!req.params.id) {
-      throw new AppError("product id must be present", 400);
+    const { error, productId } = IdSchema.validate(req.params.id);
+    if (error) {
+      console.log(error);
+      throw new AppError(error, 400);
     }
-    const productId = req.params.id;
-    const updatedProduct = req.body;
-    const expectedFields = [
-      "description",
-      "price",
-      "product_image",
-      "total_stock",
-      "b2b_stock",
-      "b2c_stock",
-    ];
-
-    const missingFields = expectedFields.filter(
-      (field) => !updatedProduct[field]
-    );
-
-    if (missingFields.length > 0) {
-      const errorMessage = `Missing required fields: ${missingFields.join(
-        ", "
-      )}`;
-      throw new AppError(errorMessage, 400);
-    }
-
-    if (isNaN(updatedProduct.price) || updatedProduct.price <= 0) {
-      throw new AppError("Invalid price value", 400);
-    }
-
-    if (
-      isNaN(updatedProduct.total_stock) ||
-      isNaN(updatedProduct.b2b_stock) ||
-      isNaN(updatedProduct.b2c_stock)
-    ) {
-      throw new AppError("Stock values must be numbers", 400);
+    const { err, updatedProduct } = UpdateProductSchema.validate(req.body);
+    if (err) {
+      throw new AppError(err, 400);
     }
     let query = `
     UPDATE products
